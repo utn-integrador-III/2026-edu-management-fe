@@ -326,6 +326,71 @@ body {
   flex: 1;
 }
 
+/* ── Modal ────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17,24,39,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 32px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--neutral-500);
+  padding: 4px;
+  display: flex;
+  border-radius: var(--radius-sm);
+}
+.modal-close-btn:hover {
+  background: var(--neutral-100);
+  color: var(--neutral-700);
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: var(--neutral-500);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.login-forgot-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--blue-500);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+  text-align: right;
+  align-self: flex-end;
+}
+.login-forgot-link:hover {
+  color: var(--blue-700);
+  text-decoration: underline;
+}
+
 /* ── Login page layout ────────────────────────────────────── */
 .login-root {
   min-height: 100vh;
@@ -408,6 +473,29 @@ body {
   font-size: 12px;
   font-weight: 500;
   color: var(--amber-300);
+}
+
+/* Variante cálida — portal docentes / encargados */
+.login-brand-warm {
+  background: linear-gradient(135deg, var(--amber-700) 0%, var(--blue-800) 100%);
+}
+
+.login-brand-warm::before {
+  background: rgba(245,158,11,0.20);
+}
+
+.login-brand-warm::after {
+  background: rgba(255,255,255,0.10);
+}
+
+.login-brand-eyebrow-warm {
+  color: var(--amber-100);
+}
+
+.login-brand-badge-warm {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
 }
 
 .login-form-panel {
