@@ -18,6 +18,32 @@ const ADMIN_CREDENTIALS = {
   },
 }
 
+// Usuarios mock — docentes y encargados
+const MOCK_USERS = [
+  {
+    id_number: '12345678',
+    password:  '12345678',
+    response: {
+      token:              'mock-jwt-teacher-token',
+      role:               'teacher',
+      first_name:         'Juan',
+      last_name:          'Pérez García',
+      mustChangePassword: true,  // simula primer login
+    },
+  },
+  {
+    id_number: '604420243',
+    password:  '604420243',
+    response: {
+      token:              'mock-jwt-parent-token',
+      role:               'parent',
+      first_name:         'Caleb',
+      last_name:          'Alvarado Salas',
+      mustChangePassword: false,
+    },
+  },
+]
+
 // ── Login ─────────────────────────────────────────────────────
 export async function loginUser(id_number, password) {
   if (USE_MOCK) {
@@ -29,6 +55,11 @@ export async function loginUser(id_number, password) {
     ) {
       return ADMIN_CREDENTIALS.response
     }
+
+    const found = MOCK_USERS.find(
+      u => u.id_number === id_number && u.password === password
+    )
+    if (found) return found.response
 
     // Simular respuesta 401 del backend
     const err = new Error('Credenciales incorrectas')
@@ -92,4 +123,26 @@ export async function changePassword(token, currentPassword, newPassword) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.detail || 'Error al cambiar contraseña')
   }
+}
+
+// ── Recuperar contraseña ──────────────────────────────────────
+export async function recoverPassword(email) {
+  if (USE_MOCK) {
+    await delay()
+    // Simula envío de correo — no revela si el email existe o no
+    return { sent: true }
+  }
+
+  const res = await fetch('/api/v1/auth/recover-password', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ email }),
+  })
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail || 'No se pudo procesar la solicitud')
+  }
+
+  return res.json().catch(() => ({ sent: true }))
 }
