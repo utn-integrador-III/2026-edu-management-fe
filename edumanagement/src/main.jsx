@@ -8,6 +8,7 @@ import './index.css'
 import AdminLogin       from './pages/AdminLogin'
 import UserLogin        from './pages/UserLogin'
 import ChangePassword   from './pages/ChangePassword'
+import ResetPassword    from './pages/ResetPassword'
 import AdminDashboard   from './pages/admin/AdminDashboard'
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import ParentDashboard  from './pages/parent/ParentDashboard'
@@ -61,24 +62,26 @@ function AppRoutes() {
       {/* Raíz → login de docentes/encargados */}
       <Route index element={<Navigate to="/login" replace />} />
 
-      {/* Login docentes y encargados — si ya autenticado redirige al dashboard */}
+      {/* Login docentes y encargados */}
       <Route element={<RedirectIfAuth allowedRoles={['teacher', 'parent']} />}>
         <Route path="/login" element={<UserLogin />} />
       </Route>
 
-      {/* Login admin — si ya autenticado redirige al dashboard */}
+      {/* Login admin */}
       <Route element={<RedirectIfAuth allowedRoles={['admin']} />}>
         <Route path="/admin-login" element={<AdminLogin />} />
       </Route>
 
-      {/* Cambio obligatorio de contraseña — accesible a cualquier sesión autenticada */}
+      {/* RF-02: Cambio obligatorio de contraseña */}
       <Route path="/change-password" element={<ChangePassword />} />
+
+      {/* RF-03: Restablecer contraseña via token (llega por link del correo) */}
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Panel admin — requiere rol admin */}
       <Route element={<RequireAuth role="admin" />}>
         <Route element={<AppShell />}>
           <Route path="/admin/dashboard"  element={<AdminDashboard />} />
-          {/* Rutas futuras — agregar componentes a medida que se desarrollen */}
           <Route path="/admin/users"      element={<PlaceholderPage title="Usuarios" />} />
           <Route path="/admin/students"   element={<PlaceholderPage title="Estudiantes" />} />
           <Route path="/admin/groups"     element={<PlaceholderPage title="Grupos y materias" />} />

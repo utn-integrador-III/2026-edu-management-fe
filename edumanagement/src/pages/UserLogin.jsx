@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Eye, EyeOff, AlertCircle, X, Mail, CheckCircle2 } from 'lucide-react'
+import { Heart, Eye, EyeOff, AlertCircle, X, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { loginUser, recoverPassword } from '../api/auth'
 
@@ -209,24 +209,15 @@ export default function UserLogin() {
   )
 }
 
-// ── Modal de recuperación de contraseña ─────────────────────────
 function RecoverPasswordModal({ onClose }) {
-  const [email, setEmail]     = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
-  const [sent, setSent]       = useState(false)
-
-  function isValidEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-  }
+  const [idNumber, setIdNumber] = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [sent, setSent]         = useState(false)
 
   async function handleSubmit() {
-    if (!email.trim()) {
-      setError('Ingrese su correo electrónico')
-      return
-    }
-    if (!isValidEmail(email.trim())) {
-      setError('Ingrese un correo electrónico válido')
+    if (!idNumber.trim()) {
+      setError('Ingrese su número de cédula')
       return
     }
 
@@ -234,10 +225,9 @@ function RecoverPasswordModal({ onClose }) {
     setError('')
 
     try {
-      await recoverPassword(email.trim())
+      await recoverPassword(idNumber.trim())
       setSent(true)
     } catch {
-      // No revelar detalles del servidor — mostrar el mismo mensaje de éxito
       setSent(true)
     } finally {
       setLoading(false)
@@ -270,8 +260,8 @@ function RecoverPasswordModal({ onClose }) {
         {!sent ? (
           <>
             <p className="modal-desc">
-              Ingrese el correo electrónico asociado a su cuenta. Le enviaremos
-              un enlace para restablecer su contraseña.
+              Ingrese su número de cédula. Si tiene un correo registrado,
+              le enviaremos un enlace para restablecer su contraseña.
             </p>
 
             {error && (
@@ -282,17 +272,17 @@ function RecoverPasswordModal({ onClose }) {
             )}
 
             <div className="field-group" style={{ marginBottom: '24px' }}>
-              <label className="field-label" htmlFor="recover-email">Correo electrónico</label>
+              <label className="field-label" htmlFor="recover-id">Número de cédula</label>
               <input
-                id="recover-email"
-                name="email"
-                type="email"
+                id="recover-id"
+                name="id_number"
+                type="text"
                 className={`field-input${error ? ' error' : ''}`}
-                placeholder="correo@ejemplo.com"
-                value={email}
-                onChange={e => { setEmail(e.target.value); setError('') }}
+                placeholder="Ej: 604420243"
+                value={idNumber}
+                onChange={e => { setIdNumber(e.target.value); setError('') }}
                 onKeyDown={handleKeyDown}
-                autoComplete="email"
+                autoComplete="username"
                 autoFocus
                 disabled={loading}
               />
@@ -322,17 +312,9 @@ function RecoverPasswordModal({ onClose }) {
             <div className="alert alert-success" style={{ marginBottom: '20px' }}>
               <CheckCircle2 size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                Si el correo está registrado, recibirá un enlace para restablecer
-                su contraseña en los próximos minutos.
+                Si su cédula tiene un correo registrado, recibirá un enlace
+                para restablecer su contraseña en los próximos minutos.
               </span>
-            </div>
-
-            <div
-              className="text-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
-            >
-              <Mail size={16} strokeWidth={1.5} />
-              <span>{email}</span>
             </div>
 
             <button
