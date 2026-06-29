@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { KeyRound, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { changePassword } from '../api/auth'
+import { changePassword, loginUser } from '../api/auth'
 
 const ROLE_DASHBOARD = {
   admin:   '/admin/dashboard',
@@ -13,7 +13,7 @@ const ROLE_DASHBOARD = {
 
 export default function ChangePassword() {
   const navigate = useNavigate()
-  const { session, clearMustChange } = useAuth()
+  const { session, login } = useAuth()
 
   const [form, setForm]         = useState({
     currentPassword: '',
@@ -78,12 +78,20 @@ export default function ChangePassword() {
     try {
       await changePassword(session.token, form.currentPassword, form.newPassword)
 
-      clearMustChange()
-      setSuccess(true)
-
-      setTimeout(() => {
-        navigate(ROLE_DASHBOARD[session.role] ?? '/login', { replace: true })
-      }, 1200)
+      if (session.id_number) {
+        const freshData = await loginUser(session.id_number, form.newPassword)
+        login({ ...freshData, id_number: session.id_number })
+        
+        setSuccess(true)
+        setTimeout(() => {
+          navigate(ROLE_DASHBOARD[freshData.role] ?? '/login', { replace: true })
+        }, 1200)
+      } else {
+        setSuccess(true)
+        setTimeout(() => {
+          navigate('/login', { replace: true })
+        }, 1200)
+      }
     } catch (err) {
       setError(err.message || 'No se pudo cambiar la contraseña. Intente de nuevo.')
     } finally {

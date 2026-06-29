@@ -10,8 +10,14 @@ import UserLogin        from './pages/UserLogin'
 import ChangePassword   from './pages/ChangePassword'
 import ResetPassword    from './pages/ResetPassword'
 import AdminDashboard   from './pages/admin/AdminDashboard'
+import AdminUsers       from './pages/admin/AdminUsers'
+import AdminStudents    from './pages/admin/AdminStudents'
+import AdminGroups      from './pages/admin/AdminGroups'
+import AdminImport      from './pages/admin/AdminImport'
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
+import TeacherStudents  from './pages/teacher/TeacherStudents'
 import ParentDashboard  from './pages/parent/ParentDashboard'
+import ParentChildren   from './pages/parent/ParentChildren'
 import AppShell         from './components/AppShell'
 
 const ROLE_DASHBOARD = {
@@ -82,13 +88,13 @@ function AppRoutes() {
       <Route element={<RequireAuth role="admin" />}>
         <Route element={<AppShell />}>
           <Route path="/admin/dashboard"  element={<AdminDashboard />} />
-          <Route path="/admin/users"      element={<PlaceholderPage title="Usuarios" />} />
-          <Route path="/admin/students"   element={<PlaceholderPage title="Estudiantes" />} />
-          <Route path="/admin/groups"     element={<PlaceholderPage title="Grupos y materias" />} />
+          <Route path="/admin/users"      element={<AdminUsers />} />
+          <Route path="/admin/students"   element={<AdminStudents />} />
+          <Route path="/admin/groups"     element={<AdminGroups />} />
           <Route path="/admin/attendance" element={<PlaceholderPage title="Asistencia" />} />
           <Route path="/admin/grades"     element={<PlaceholderPage title="Calificaciones" />} />
           <Route path="/admin/calendar"   element={<PlaceholderPage title="Calendario" />} />
-          <Route path="/admin/import"     element={<PlaceholderPage title="Importar CSV" />} />
+          <Route path="/admin/import"     element={<AdminImport />} />
         </Route>
       </Route>
 
@@ -99,7 +105,7 @@ function AppRoutes() {
           <Route path="/teacher/attendance" element={<PlaceholderPage title="Asistencia" />} />
           <Route path="/teacher/grades"     element={<PlaceholderPage title="Calificaciones" />} />
           <Route path="/teacher/calendar"   element={<PlaceholderPage title="Calendario" />} />
-          <Route path="/teacher/students"   element={<PlaceholderPage title="Mis estudiantes" />} />
+          <Route path="/teacher/students"   element={<TeacherStudents />} />
         </Route>
       </Route>
 
@@ -107,7 +113,7 @@ function AppRoutes() {
       <Route element={<RequireAuth role="parent" />}>
         <Route element={<AppShell />}>
           <Route path="/parent/dashboard"     element={<ParentDashboard />} />
-          <Route path="/parent/children"      element={<PlaceholderPage title="Mis hijos" />} />
+          <Route path="/parent/children"      element={<ParentChildren />} />
           <Route path="/parent/attendance"    element={<PlaceholderPage title="Asistencia" />} />
           <Route path="/parent/grades"        element={<PlaceholderPage title="Calificaciones" />} />
           <Route path="/parent/calendar"      element={<PlaceholderPage title="Calendario" />} />
