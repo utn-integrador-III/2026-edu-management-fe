@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 //  Cambiar a false cuando el backend esté disponible
 // ─────────────────────────────────────────────────────────────
-const USE_MOCK = true
+const USE_MOCK = false
 
 const delay = (ms = 500) => new Promise(r => setTimeout(r, ms))
 
@@ -126,7 +126,7 @@ export async function changePassword(token, currentPassword, newPassword) {
 }
 
 // ── Recuperar contraseña ──────────────────────────────────────
-export async function recoverPassword(email) {
+export async function recoverPassword(id_number) {
   if (USE_MOCK) {
     await delay()
     // Simula envío de correo — no revela si el email existe o no
@@ -136,7 +136,7 @@ export async function recoverPassword(email) {
   const res = await fetch('/api/v1/auth/recover-password', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ email }),
+    body:    JSON.stringify({ id_number }), 
   })
 
   if (!res.ok) {
@@ -145,4 +145,16 @@ export async function recoverPassword(email) {
   }
 
   return res.json().catch(() => ({ sent: true }))
+}
+
+export async function resetPassword(token, newPassword) {
+  const res = await fetch('/api/v1/auth/reset-password', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ token, newPassword }),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail || 'Error al restablecer la contraseña')
+  }
 }
