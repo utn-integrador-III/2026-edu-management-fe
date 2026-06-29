@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Eye, EyeOff, AlertCircle, X, CheckCircle2 } from 'lucide-react'
+import { Heart, Eye, EyeOff, AlertCircle, X, CheckCircle2, User, Lock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { loginUser, recoverPassword } from '../api/auth'
 
@@ -48,7 +48,7 @@ export default function UserLogin() {
         return
       }
 
-      login(data)
+      login({ ...data, id_number: form.id_number.trim() })
 
       if (data.mustChangePassword) {
         navigate('/change-password')
@@ -78,34 +78,38 @@ export default function UserLogin() {
   return (
     <div className="login-root">
       {/* Panel de marca */}
-      <div className="login-brand login-brand-warm">
-        <div className="login-brand-content">
-          <p className="login-brand-eyebrow login-brand-eyebrow-warm">Comunidad educativa</p>
+      <div className="login-brand">
+        <div className="login-brand-logo">
+          <span style={{ fontWeight: 700, fontSize: '24px', letterSpacing: '-0.5px', color: '#fff' }}>Edu </span>
+          <span style={{ fontWeight: 700, fontSize: '24px', letterSpacing: '-0.5px', color: 'var(--amber-500)' }}>Management</span>
+        </div>
+
+        <div className="login-brand-center">
           <h1 className="login-brand-title">
-            EduConecta<br />CR
+            Asistencia y<br />
+            comunicación escolar,<br />
+            <span style={{ color: 'var(--amber-500)' }}>sin papeleo.</span>
           </h1>
-          <p className="login-brand-sub">
-            Acompañamos a docentes y familias en el seguimiento del progreso escolar.
-            Consulte asistencia, calificaciones y novedades de sus estudiantes en un solo lugar.
+        </div>
+
+        <div className="login-brand-footer">
+          <p style={{ opacity: 0.6, fontSize: '13px', color: '#fff', fontWeight: 500 }}>
+            Plataforma de gestión escolar · Costa Rica
           </p>
-          <div className="login-brand-badge login-brand-badge-warm">
-            <Heart size={13} strokeWidth={1.5} />
-            Portal para docentes y encargados
-          </div>
         </div>
       </div>
 
       {/* Panel del formulario */}
       <div className="login-form-panel">
         <div className="login-card">
-          <div className="login-card-header">
-            <p className="login-card-title">Bienvenido</p>
-            <p className="login-card-desc">Ingrese con su número de cédula</p>
+          <div className="login-card-header" style={{ marginBottom: '28px' }}>
+            <p className="login-card-title">Iniciar sesión</p>
+            <p className="login-card-desc">Ingrese su cédula y contraseña para acceder.</p>
           </div>
 
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-              <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: 1 }} />
+              <AlertCircle size={20} strokeWidth={1.5} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
@@ -113,20 +117,24 @@ export default function UserLogin() {
           <div className="login-fields">
             {/* Cédula */}
             <div className="field-group">
-              <label className="field-label" htmlFor="id_number">Cédula</label>
-              <input
-                id="id_number"
-                name="id_number"
-                type="text"
-                className={`field-input${fieldErr.id_number ? ' error' : ''}`}
-                placeholder="Número de cédula"
-                value={form.id_number}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                autoComplete="username"
-                autoFocus
-                disabled={loading}
-              />
+              <label className="field-label" htmlFor="id_number" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px' }}>NÚMERO DE CÉDULA</label>
+              <div style={{ position: 'relative' }}>
+                <User size={18} strokeWidth={1.5} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--neutral-400)' }} />
+                <input
+                  id="id_number"
+                  name="id_number"
+                  type="text"
+                  className={`field-input${fieldErr.id_number ? ' error' : ''}`}
+                  style={{ paddingLeft: '40px' }}
+                  placeholder="1-0456-7890"
+                  value={form.id_number}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  autoComplete="username"
+                  autoFocus
+                  disabled={loading}
+                />
+              </div>
               {fieldErr.id_number && (
                 <span className="field-error">{fieldErr.id_number}</span>
               )}
@@ -134,33 +142,34 @@ export default function UserLogin() {
 
             {/* Contraseña */}
             <div className="field-group">
-              <label className="field-label" htmlFor="password">Contraseña</label>
+              <label className="field-label" htmlFor="password" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px' }}>CONTRASEÑA</label>
               <div style={{ position: 'relative' }}>
+                <Lock size={18} strokeWidth={1.5} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--neutral-400)' }} />
                 <input
                   id="password"
                   name="password"
                   type={showPwd ? 'text' : 'password'}
                   className={`field-input${fieldErr.password ? ' error' : ''}`}
+                  style={{ paddingLeft: '40px', paddingRight: '40px' }}
                   placeholder="••••••••"
                   value={form.password}
                   onChange={handleChange}
                   onKeyDown={handleKeyDown}
                   autoComplete="current-password"
                   disabled={loading}
-                  style={{ paddingRight: '40px' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd(v => !v)}
                   style={{
                     position: 'absolute',
-                    right: '10px',
+                    right: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: 'var(--neutral-500)',
+                    color: 'var(--neutral-400)',
                     display: 'flex',
                     padding: '2px',
                   }}
@@ -168,8 +177,8 @@ export default function UserLogin() {
                   aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
                   {showPwd
-                    ? <EyeOff size={16} strokeWidth={1.5} />
-                    : <Eye size={16} strokeWidth={1.5} />
+                    ? <EyeOff size={18} strokeWidth={1.5} />
+                    : <Eye size={18} strokeWidth={1.5} />
                   }
                 </button>
               </div>
@@ -177,28 +186,55 @@ export default function UserLogin() {
                 <span className="field-error">{fieldErr.password}</span>
               )}
 
-              <button
-                type="button"
-                className="login-forgot-link"
-                onClick={() => setShowRecover(true)}
-                disabled={loading}
-              >
-                ¿Olvidó su contraseña?
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                <button
+                  type="button"
+                  className="login-forgot-link"
+                  onClick={() => setShowRecover(true)}
+                  disabled={loading}
+                >
+                  ¿Olvidó su contraseña?
+                </button>
+              </div>
             </div>
           </div>
 
           <button
-            className={`btn btn-primary btn-md btn-block${loading ? ' btn-loading' : ''}`}
+            className={`btn btn-primary btn-block btn-lg${loading ? ' btn-loading' : ''}`}
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? 'Verificando...' : 'Ingresar'}
+            {loading ? 'Ingresando...' : 'Ingresar al sistema'}
           </button>
 
-          <p className="login-footer-text">
-            ¿Problemas para acceder? Contacte a la administración del centro educativo.
-          </p>
+          {/* Banner de primer ingreso en color ámbar */}
+          <div
+            style={{
+              marginTop: '24px',
+              padding: '12px 16px',
+              background: 'var(--color-warning-bg)',
+              borderLeft: '4px solid var(--color-warning)',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              fontSize: '12px',
+              color: 'var(--neutral-900)',
+              lineHeight: '1.4',
+              textAlign: 'left'
+            }}
+          >
+            <strong>Primer ingreso:</strong> al iniciar sesión se le solicitará cambiar su contraseña temporal.
+          </div>
+
+          {/* Enlace de soporte al pie */}
+          <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '13px', color: 'var(--neutral-500)' }}>
+            <span>Problemas de acceso · </span>
+            <a
+              href="#support"
+              onClick={(e) => { e.preventDefault(); alert("Por favor contacte al personal administrativo de su centro educativo para restablecer sus credenciales."); }}
+              style={{ color: 'var(--blue-500)', textDecoration: 'none', fontWeight: 600 }}
+            >
+              Contacte a su administrador
+            </a>
+          </div>
         </div>
       </div>
 

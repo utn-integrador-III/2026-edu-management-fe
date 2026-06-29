@@ -97,7 +97,7 @@ export default function AppShell() {
                 `sidebar-item${isActive ? ' active' : ''}`
               }
             >
-              <Icon size={18} strokeWidth={1.5} color="currentColor" />
+              <Icon size={20} strokeWidth={1.5} color="currentColor" />
               {label}
             </NavLink>
           ))}
@@ -116,7 +116,7 @@ export default function AppShell() {
             </div>
           </div>
           <button className="sidebar-item" onClick={handleLogout}>
-            <LogOut size={18} strokeWidth={1.5} color="currentColor" />
+            <LogOut size={20} strokeWidth={1.5} color="currentColor" />
             Cerrar sesión
           </button>
         </div>
