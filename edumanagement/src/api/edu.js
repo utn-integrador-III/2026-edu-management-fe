@@ -653,6 +653,52 @@ export async function listGroups() {
   return res.json()
 }
 
+// Obtener detalles de un grupo (estudiantes y docentes)
+export async function getGroupDetails(groupId) {
+  if (USE_MOCK) {
+    await delay()
+    const group = _mockGroups.find(g => g.id === groupId)
+    if (!group) throw new Error('Grupo no encontrado')
+    
+    const groupStudents = _mockUsers.filter(u => u.group_id === group.id && u.role === 'student' && u.active)
+    
+    const links = _mockAssignments.filter(a => a.group_id === group.id)
+    const teachersMap = {}
+    links.forEach(link => {
+      const teacher = _mockUsers.find(u => u.id === link.teacher_id)
+      const subject = _mockSubjects.find(s => s.id === link.subject_id)
+      if (teacher && subject) {
+        if (!teachersMap[teacher.id]) {
+          teachersMap[teacher.id] = {
+            id: teacher.id,
+            first_name: teacher.first_name,
+            last_name: teacher.last_name,
+            email: teacher.email,
+            phone: teacher.phone,
+            subjects: []
+          }
+        }
+        if (!teachersMap[teacher.id].subjects.includes(subject.name)) {
+          teachersMap[teacher.id].subjects.push(subject.name)
+        }
+      }
+    })
+    
+    return {
+      group,
+      students: groupStudents,
+      teachers: Object.values(teachersMap)
+    }
+  }
+
+  const res = await fetch(`/api/v1/users/groups/${groupId}/details`, {
+    method: 'GET',
+    headers: getHeaders()
+  })
+  if (!res.ok) throw new Error('Error al obtener detalles de la sección')
+  return res.json()
+}
+
 // ─────────────────────────────────────────────────────────────
 //  3. IMPORTACIONES CSV Y AUTOMATIZACIÓN
 // ─────────────────────────────────────────────────────────────

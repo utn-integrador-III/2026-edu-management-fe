@@ -102,7 +102,7 @@ export default function AdminImport() {
             </form>
 
             {/* Resultado de Carga de Usuarios */}
-            {usersResult && (
+            {usersResult && typeof usersResult === 'object' && (
               <div
                 style={{
                   marginTop: '16px',
@@ -165,7 +165,7 @@ export default function AdminImport() {
             </form>
 
             {/* Resultado de Carga de Estudiantes */}
-            {studentsResult && (
+            {studentsResult && typeof studentsResult === 'object' && (
               <div
                 style={{
                   marginTop: '16px',
@@ -215,8 +215,8 @@ export default function AdminImport() {
             </div>
 
             {(() => {
-              const hasUsersErrors = usersResult?.errors && usersResult.errors.length > 0
-              const hasStudentsErrors = studentsResult?.errors && studentsResult.errors.length > 0
+              const hasUsersErrors = Array.isArray(usersResult?.errors) && usersResult.errors.length > 0
+              const hasStudentsErrors = Array.isArray(studentsResult?.errors) && studentsResult.errors.length > 0
               const hasAnyErrors = hasUsersErrors || hasStudentsErrors
               const hasAnyResult = usersResult || studentsResult
 
@@ -228,16 +228,20 @@ export default function AdminImport() {
                     </div>
 
                     <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {usersResult?.errors?.map((err, idx) => (
+                      {Array.isArray(usersResult?.errors) && usersResult.errors.map((err, idx) => (
                         <div key={`u-err-${idx}`} style={{ padding: '10px', background: 'var(--color-danger-bg)', border: '1px solid rgba(220,38,38,0.1)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--color-danger)', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                           <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                          <span>[Usuarios] {err}</span>
+                          <span>
+                            [Usuarios] {err && typeof err === 'object' ? `${err.row ? `Fila/Cédula ${err.row}: ` : ''}${err.error || ''}` : String(err)}
+                          </span>
                         </div>
                       ))}
-                      {studentsResult?.errors?.map((err, idx) => (
+                      {Array.isArray(studentsResult?.errors) && studentsResult.errors.map((err, idx) => (
                         <div key={`s-err-${idx}`} style={{ padding: '10px', background: 'var(--color-danger-bg)', border: '1px solid rgba(220,38,38,0.1)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--color-danger)', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                           <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                          <span>[Estudiantes] {err}</span>
+                          <span>
+                            [Estudiantes] {err && typeof err === 'object' ? `${err.row ? `Fila/Cédula ${err.row}: ` : ''}${err.error || ''}` : String(err)}
+                          </span>
                         </div>
                       ))}
                     </div>
