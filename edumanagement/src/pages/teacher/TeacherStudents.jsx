@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { GraduationCap, Users, Search, Phone, Mail, User, BookOpen } from 'lucide-react'
-import { getUsers, listGroups, getParentChildren, getStudentSubjects } from '../../api/edu'
+import { GraduationCap, Users, Search, Phone, Mail, User, BookOpen, X, AlertTriangle } from 'lucide-react'
+import { getUsers, listGroups, getParentChildren, getStudentSubjects, getGroupDetails } from '../../api/edu'
 
 export default function TeacherStudents() {
   const [groups, setGroups] = useState([])
@@ -14,6 +14,28 @@ export default function TeacherStudents() {
   const [studentParent, setStudentParent] = useState(null)
   const [studentSubjects, setStudentSubjects] = useState([])
   const [loadingDetails, setLoadingDetails] = useState(false)
+
+  // Detalles del grupo seleccionado
+  const [showGroupDetailModal, setShowGroupDetailModal] = useState(false)
+  const [groupDetails, setGroupDetails] = useState(null)
+  const [loadingGroupDetails, setLoadingGroupDetails] = useState(false)
+  const [groupErrorMsg, setGroupErrorMsg] = useState('')
+
+  const handleOpenGroupDetailModal = async (group) => {
+    if (!group) return
+    setLoadingGroupDetails(true)
+    setShowGroupDetailModal(true)
+    setGroupDetails(null)
+    setGroupErrorMsg('')
+    try {
+      const details = await getGroupDetails(group.id)
+      setGroupDetails(details)
+    } catch (err) {
+      setGroupErrorMsg(err.message || 'Error al cargar detalles de la sección')
+    } finally {
+      setLoadingGroupDetails(false)
+    }
+  }
 
   // Cargar grupos
   const loadGroups = useCallback(async () => {
@@ -103,82 +125,103 @@ export default function TeacherStudents() {
           <h1 className="text-h1" style={{ color: 'var(--neutral-900)' }}>Mis Estudiantes</h1>
           <p className="text-sm">Consulte los grupos a su cargo, lista de alumnos matriculados e información de contacto.</p>
         </div>
-      </div>
-
-      {/* Selector de Grupos/Secciones */}
-      <div className="tabs-container">
-        {groups.map(g => (
+        {selectedGroup && (
           <button
-            key={g.id}
-            className={`tab-button${selectedGroup?.id === g.id ? ' active' : ''}`}
-            onClick={() => { setSelectedGroup(g); setSelectedStudent(null); }}
+            className="btn btn-secondary btn-md"
+            onClick={() => handleOpenGroupDetailModal(selectedGroup)}
           >
-            <Users size={20} strokeWidth={1.5} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-            Sección {g.name} ({g.level})
+            <BookOpen size={20} strokeWidth={1.5} />
+            Detalle de la Sección
           </button>
-        ))}
+        )}
       </div>
 
-      {/* Barra de Búsqueda */}
-      <div className="card" style={{ padding: '16px 20px', marginBottom: '24px' }}>
-        <div className="search-bar" style={{ maxWidth: '360px' }}>
-          <Search size={20} strokeWidth={1.5} className="search-icon" />
-          <input
-            type="text"
-            className="field-input search-input"
-            placeholder="Buscar por nombre o cédula..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Lista de Alumnos */}
-      {loading ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-          <p className="text-h3" style={{ color: 'var(--neutral-400)' }}>Cargando lista de estudiantes...</p>
-        </div>
-      ) : filteredStudents.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-          <GraduationCap size={48} strokeWidth={1} color="var(--neutral-300)" style={{ marginBottom: '8px' }} />
-          <p className="text-h3" style={{ color: 'var(--neutral-400)' }}>No hay estudiantes registrados en este grupo</p>
+      {groups.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '48px', maxWidth: '600px', margin: '24px auto' }}>
+          <Users size={48} strokeWidth={1} color="var(--neutral-300)" style={{ marginBottom: '12px' }} />
+          <p className="text-h2" style={{ color: 'var(--neutral-900)' }}>No tiene grupos asignados</p>
+          <p className="text-sm" style={{ marginTop: '8px' }}>
+            Actualmente no figura como docente a cargo de ninguna sección en el sistema.
+          </p>
         </div>
       ) : (
-        <div className="table-container">
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Cédula</th>
-                  <th>Nombre Completo</th>
-                  <th>Sección</th>
-                  <th>Nivel</th>
-                  <th>Contacto</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStudents.map(s => (
-                  <tr key={s.id}>
-                    <td className="text-mono" style={{ fontWeight: 600 }}>{s.id_number}</td>
-                    <td style={{ fontWeight: 500, color: 'var(--neutral-900)' }}>{s.first_name} {s.last_name}</td>
-                    <td><span className="badge badge-blue">{selectedGroup?.name}</span></td>
-                    <td>{selectedGroup?.level}</td>
-                    <td>{s.phone || s.email || <span style={{ color: 'var(--neutral-300)' }}>—</span>}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleOpenStudentDrawer(s)}
-                      >
-                        Ver Ficha
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          {/* Selector de Grupos/Secciones */}
+          <div className="tabs-container">
+            {groups.map(g => (
+              <button
+                key={g.id}
+                className={`tab-button${selectedGroup?.id === g.id ? ' active' : ''}`}
+                onClick={() => { setSelectedGroup(g); setSelectedStudent(null); }}
+              >
+                <Users size={20} strokeWidth={1.5} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+                Sección {g.name} ({g.level})
+              </button>
+            ))}
           </div>
-        </div>
+
+          {/* Barra de Búsqueda */}
+          <div className="card" style={{ padding: '16px 20px', marginBottom: '24px' }}>
+            <div className="search-bar" style={{ maxWidth: '360px' }}>
+              <Search size={20} strokeWidth={1.5} className="search-icon" />
+              <input
+                type="text"
+                className="field-input search-input"
+                placeholder="Buscar por nombre o cédula..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Lista de Alumnos */}
+          {loading ? (
+            <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+              <p className="text-h3" style={{ color: 'var(--neutral-400)' }}>Cargando lista de estudiantes...</p>
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+              <GraduationCap size={48} strokeWidth={1} color="var(--neutral-300)" style={{ marginBottom: '8px' }} />
+              <p className="text-h3" style={{ color: 'var(--neutral-400)' }}>No hay estudiantes registrados en este grupo</p>
+            </div>
+          ) : (
+            <div className="table-container">
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Cédula</th>
+                      <th>Nombre Completo</th>
+                      <th>Sección</th>
+                      <th>Nivel</th>
+                      <th>Contacto</th>
+                      <th style={{ textAlign: 'right' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map(s => (
+                      <tr key={s.id}>
+                        <td className="text-mono" style={{ fontWeight: 600 }}>{s.id_number}</td>
+                        <td style={{ fontWeight: 500, color: 'var(--neutral-900)' }}>{s.first_name} {s.last_name}</td>
+                        <td><span className="badge badge-blue">{selectedGroup?.name}</span></td>
+                        <td>{selectedGroup?.level}</td>
+                        <td>{s.phone || s.email || <span style={{ color: 'var(--neutral-300)' }}>—</span>}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleOpenStudentDrawer(s)}
+                          >
+                            Ver Ficha
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* DRAWER/FICHA DEL ESTUDIANTE */}
@@ -294,7 +337,129 @@ export default function TeacherStudents() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL DETALLE DE GRUPO */}
+      {showGroupDetailModal && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowGroupDetailModal(false)}>
+          <div className="modal-card" style={{ maxWidth: '640px', width: '90%' }}>
+            <div className="modal-header">
+              <p className="login-card-title">
+                {groupDetails?.group ? `Detalle de la Sección ${groupDetails.group.name}` : 'Cargando detalles...'}
+              </p>
+              <button className="modal-close-btn" onClick={() => setShowGroupDetailModal(false)}>
+                <X size={20} strokeWidth={1.5} />
+              </button>
+            </div>
 
+            {loadingGroupDetails ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <p className="text-h3" style={{ color: 'var(--neutral-400)' }}>Cargando información del grupo...</p>
+              </div>
+            ) : groupErrorMsg ? (
+              <div className="alert alert-error" style={{ marginTop: '16px' }}>
+                <AlertTriangle size={20} strokeWidth={1.5} />
+                <span>{groupErrorMsg}</span>
+              </div>
+            ) : groupDetails ? (
+              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                
+                {/* Profesores Encargados */}
+                <div>
+                  <h3 className="text-caption" style={{ fontWeight: 700, color: 'var(--neutral-400)', textTransform: 'uppercase', marginBottom: '12px' }}>
+                    Docentes y Asignaturas
+                  </h3>
+                  {groupDetails.teachers.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--neutral-400)', fontStyle: 'italic' }}>
+                      No hay docentes asignados a materias en este grupo.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {groupDetails.teachers.map(t => (
+                        <div
+                          key={t.id}
+                          style={{
+                            padding: '12px 16px',
+                            background: 'var(--neutral-50)',
+                            border: '1px solid var(--neutral-100)',
+                            borderRadius: 'var(--radius-md)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <div>
+                            <p style={{ fontWeight: 600, color: 'var(--neutral-900)' }}>
+                              {t.first_name} {t.last_name}
+                            </p>
+                            <p className="text-caption" style={{ marginTop: '2px' }}>
+                              {t.email || t.phone || 'Sin datos de contacto'}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            {t.subjects.map((sub, idx) => (
+                              <span key={idx} className="badge badge-blue" style={{ fontSize: '10px' }}>
+                                {sub}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Estudiantes */}
+                <div style={{ borderTop: '1px solid var(--neutral-100)', paddingTop: '20px' }}>
+                  <h3 className="text-caption" style={{ fontWeight: 700, color: 'var(--neutral-400)', textTransform: 'uppercase', marginBottom: '12px' }}>
+                    Alumnos Inscritos ({groupDetails.students.length})
+                  </h3>
+                  {groupDetails.students.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--neutral-400)', fontStyle: 'italic' }}>
+                      No hay estudiantes matriculados en este grupo.
+                    </p>
+                  ) : (
+                    <div
+                      style={{
+                        maxHeight: '260px',
+                        overflowY: 'auto',
+                        border: '1px solid var(--neutral-200)',
+                        borderRadius: 'var(--radius-md)'
+                      }}
+                    >
+                      <table className="table" style={{ margin: 0 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--neutral-50)' }}>
+                            <th style={{ padding: '8px 16px', fontSize: '11px' }}>Cédula</th>
+                            <th style={{ padding: '8px 16px', fontSize: '11px' }}>Nombre</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupDetails.students.map(s => (
+                            <tr key={s.id}>
+                              <td className="text-mono" style={{ padding: '8px 16px', fontSize: '12px', fontWeight: 600 }}>
+                                {s.id_number}
+                              </td>
+                              <td style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--neutral-900)', fontWeight: 500 }}>
+                                {s.first_name} {s.last_name}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            ) : null}
+            
+            <div style={{ marginTop: '24px', textAlign: 'right' }}>
+              <button className="btn btn-secondary" onClick={() => setShowGroupDetailModal(false)}>
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

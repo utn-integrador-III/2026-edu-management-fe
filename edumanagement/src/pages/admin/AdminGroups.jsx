@@ -4,7 +4,7 @@ import {
   Check, AlertTriangle, ChevronRight, Hash
 } from 'lucide-react'
 import {
-  listGroups, listSubjects, createSubject, getUsers
+  listGroups, listSubjects, createSubject, getUsers, getGroupDetails
 } from '../../api/edu'
 
 export default function AdminGroups() {
@@ -14,6 +14,26 @@ export default function AdminGroups() {
   const [subjects, setSubjects] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(false)
+
+  // Modal detalle de grupo
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedGroupDetails, setSelectedGroupDetails] = useState(null)
+  const [loadingDetails, setLoadingDetails] = useState(false)
+
+  const handleOpenDetailModal = async (group) => {
+    setLoadingDetails(true)
+    setShowDetailModal(true)
+    setSelectedGroupDetails(null)
+    setErrorMsg('')
+    try {
+      const details = await getGroupDetails(group.id)
+      setSelectedGroupDetails(details)
+    } catch (err) {
+      setErrorMsg(err.message || 'Error al cargar detalles de la sección')
+    } finally {
+      setLoadingDetails(false)
+    }
+  }
 
   // Modal crear materia
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -127,7 +147,28 @@ export default function AdminGroups() {
           {groups.map(g => {
             const count = getStudentCount(g.id)
             return (
-              <div key={g.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px', border: '1px solid var(--neutral-200)' }}>
+              <div
+                key={g.id}
+                className="card"
+                onClick={() => handleOpenDetailModal(g)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  padding: '20px',
+                  border: '1px solid var(--neutral-200)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.12s, box-shadow 0.12s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = 'var(--shadow-md)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'none'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <div
@@ -267,6 +308,129 @@ export default function AdminGroups() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL DETALLE DE GRUPO */}
+      {showDetailModal && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowDetailModal(false)}>
+          <div className="modal-card" style={{ maxWidth: '640px', width: '90%' }}>
+            <div className="modal-header">
+              <p className="login-card-title">
+                {selectedGroupDetails?.group ? `Detalle de la Sección ${selectedGroupDetails.group.name}` : 'Cargando detalles...'}
+              </p>
+              <button className="modal-close-btn" onClick={() => setShowDetailModal(false)}>
+                <X size={20} strokeWidth={1.5} />
+              </button>
+            </div>
+
+            {loadingDetails ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <p className="text-h3" style={{ color: 'var(--neutral-400)' }}>Cargando información del grupo...</p>
+              </div>
+            ) : errorMsg ? (
+              <div className="alert alert-error" style={{ marginTop: '16px' }}>
+                <AlertTriangle size={20} strokeWidth={1.5} />
+                <span>{errorMsg}</span>
+              </div>
+            ) : selectedGroupDetails ? (
+              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                
+                {/* Profesores Encargados */}
+                <div>
+                  <h3 className="text-caption" style={{ fontWeight: 700, color: 'var(--neutral-400)', textTransform: 'uppercase', marginBottom: '12px' }}>
+                    Docentes y Asignaturas
+                  </h3>
+                  {selectedGroupDetails.teachers.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--neutral-400)', fontStyle: 'italic' }}>
+                      No hay docentes asignados a materias en este grupo.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedGroupDetails.teachers.map(t => (
+                        <div
+                          key={t.id}
+                          style={{
+                            padding: '12px 16px',
+                            background: 'var(--neutral-50)',
+                            border: '1px solid var(--neutral-100)',
+                            borderRadius: 'var(--radius-md)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <div>
+                            <p style={{ fontWeight: 600, color: 'var(--neutral-900)' }}>
+                              {t.first_name} {t.last_name}
+                            </p>
+                            <p className="text-caption" style={{ marginTop: '2px' }}>
+                              {t.email || t.phone || 'Sin datos de contacto'}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            {t.subjects.map((sub, idx) => (
+                              <span key={idx} className="badge badge-blue" style={{ fontSize: '10px' }}>
+                                {sub}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Estudiantes */}
+                <div style={{ borderTop: '1px solid var(--neutral-100)', paddingTop: '20px' }}>
+                  <h3 className="text-caption" style={{ fontWeight: 700, color: 'var(--neutral-400)', textTransform: 'uppercase', marginBottom: '12px' }}>
+                    Alumnos Inscritos ({selectedGroupDetails.students.length})
+                  </h3>
+                  {selectedGroupDetails.students.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--neutral-400)', fontStyle: 'italic' }}>
+                      No hay estudiantes matriculados en este grupo.
+                    </p>
+                  ) : (
+                    <div
+                      style={{
+                        maxHeight: '260px',
+                        overflowY: 'auto',
+                        border: '1px solid var(--neutral-200)',
+                        borderRadius: 'var(--radius-md)'
+                      }}
+                    >
+                      <table className="table" style={{ margin: 0 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--neutral-50)' }}>
+                            <th style={{ padding: '8px 16px', fontSize: '11px' }}>Cédula</th>
+                            <th style={{ padding: '8px 16px', fontSize: '11px' }}>Nombre</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedGroupDetails.students.map(s => (
+                            <tr key={s.id}>
+                              <td className="text-mono" style={{ padding: '8px 16px', fontSize: '12px', fontWeight: 600 }}>
+                                {s.id_number}
+                              </td>
+                              <td style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--neutral-900)', fontWeight: 500 }}>
+                                {s.first_name} {s.last_name}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            ) : null}
+            
+            <div style={{ marginTop: '24px', textAlign: 'right' }}>
+              <button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
