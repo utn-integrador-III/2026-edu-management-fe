@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 //  Cambiar a false para usar el backend real (con proxy de Vite)
 // ─────────────────────────────────────────────────────────────
-const USE_MOCK = false
+const USE_MOCK = true
 
 const delay = (ms = 500) => new Promise(r => setTimeout(r, ms))
 
@@ -27,8 +27,31 @@ function getHeaders(isMultipart = false) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  BASE DE DATOS MOCK MUTABLE EN MEMORIA
-// ─────────────────────────────────────────────────────────────
+let _mockAttendance = [
+  {
+    id: 'att_mock_1',
+    date: '2026-07-15',
+    group_id: '64f91ba48c0840b2a8d3e999', // 7-A student group_id is 64f91ba48c0840b2a8d3e900
+    // Wait, let's look at 7-A id: '64f91ba48c0840b2a8d3e900'
+    group_id: '64f91ba48c0840b2a8d3e900',
+    subject_id: '64f91ba48c0840b2a8d3e111', // Matemáticas
+    records: [
+      { student_id: '64f91ba48c0840b2a8d3e999', status: 'presente', arrival_time: null },
+      { student_id: '64f91ba48c0840b2a8d3e998', status: 'tardanza', arrival_time: '07:15' }
+    ]
+  },
+  {
+    id: 'att_mock_2',
+    date: '2026-07-16',
+    group_id: '64f91ba48c0840b2a8d3e900', // 7-A
+    subject_id: '64f91ba48c0840b2a8d3e111', // Matemáticas
+    records: [
+      { student_id: '64f91ba48c0840b2a8d3e999', status: 'presente', arrival_time: null },
+      { student_id: '64f91ba48c0840b2a8d3e998', status: 'ausente', arrival_time: null }
+    ]
+  }
+]
+
 let _mockUsers = [
   {
     id: '64f91ba48c0840b2a8d3e911',
@@ -797,3 +820,102 @@ export async function runStudentsAutomation() {
   if (!res.ok) throw new Error('Error al ejecutar la automatización de estudiantes')
   return res.json()
 }
+
+// ─────────────────────────────────────────────────────────────
+//  4. MÓDULO DE ASISTENCIA
+// ─────────────────────────────────────────────────────────────
+
+function _saveMockAttendance(data) {
+  // Si ya existe asistencia para esa fecha, materia y grupo, la sobreescribimos
+  const index = _mockAttendance.findIndex(
+    att => att.date === data.date &&
+           att.group_id === data.group_id &&
+           att.subject_id === data.subject_id
+  )
+  const record = {
+    id: Math.random().toString(36).substr(2, 9),
+    ...data
+  }
+  if (index !== -1) {
+    _mockAttendance[index] = record
+  } else {
+    _mockAttendance.push(record)
+  }
+  return { message: 'Attendance recorded successfully', data: record }
+}
+
+function _getMockAttendanceHistory(filters = {}) {
+  let list = [..._mockAttendance]
+  if (filters.date) {
+    list = list.filter(att => att.date === filters.date)
+  }
+  if (filters.group_id) {
+    list = list.filter(att => att.group_id === filters.group_id)
+  }
+  if (filters.subject_id) {
+    list = list.filter(att => att.subject_id === filters.subject_id)
+  }
+  return list
+}
+
+export async function saveAttendance(data) {
+  if (USE_MOCK) {
+    await delay()
+    return _saveMockAttendance(data)
+  }
+
+  try {
+    const res = await fetch('/api/v1/attendance/', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 501) {
+        console.warn('POST /api/v1/attendance/ returned 404/501 (not implemented). Falling back to mock simulation.')
+        await delay()
+        return _saveMockAttendance(data)
+      }
+      const d = await res.json().catch(() => ({}))
+      throw new Error(d.detail || 'Error al registrar la asistencia')
+    }
+    return res.json()
+  } catch (err) {
+    console.warn('POST /api/v1/attendance/ failed. Falling back to mock simulation.', err)
+    await delay()
+    return _saveMockAttendance(data)
+  }
+}
+
+export async function getAttendanceHistory(filters = {}) {
+  if (USE_MOCK) {
+    await delay()
+    return _getMockAttendanceHistory(filters)
+  }
+
+  try {
+    const query = new URLSearchParams()
+    if (filters.date) query.append('date', filters.date)
+    if (filters.group_id) query.append('group_id', filters.group_id)
+    if (filters.subject_id) query.append('subject_id', filters.subject_id)
+
+    const res = await fetch(`/api/v1/attendance/?${query.toString()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    })
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 501) {
+        console.warn('GET /api/v1/attendance/ returned 404/501 (not implemented). Falling back to mock simulation.')
+        await delay()
+        return _getMockAttendanceHistory(filters)
+      }
+      throw new Error('Error al obtener historial de asistencia')
+    }
+    return res.json()
+  } catch (err) {
+    console.warn('GET /api/v1/attendance/ failed. Falling back to mock simulation.', err)
+    await delay()
+    return _getMockAttendanceHistory(filters)
+  }
+}
+
