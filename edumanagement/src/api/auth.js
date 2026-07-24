@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 //  Cambiar a false cuando el backend esté disponible
 // ─────────────────────────────────────────────────────────────
-const USE_MOCK = false
+const USE_MOCK = true
 
 const delay = (ms = 500) => new Promise(r => setTimeout(r, ms))
 

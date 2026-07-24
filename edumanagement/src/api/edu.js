@@ -919,3 +919,147 @@ export async function getAttendanceHistory(filters = {}) {
   }
 }
 
+// Obtener asistencia mensual de un estudiante (vista de encargado)
+export async function getStudentMonthlyAttendance(studentId, month, year = 2026) {
+  if (USE_MOCK) {
+    await delay()
+    return _getMockStudentMonthlyAttendance(studentId, month, year)
+  }
+
+  try {
+    const res = await fetch(`/api/v1/attendance/students/${studentId}/monthly?month=${month}&year=${year}`, {
+      method: 'GET',
+      headers: getHeaders()
+    })
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 501) {
+        console.warn(`GET /api/v1/attendance/students/${studentId}/monthly returned ${res.status}. Falling back to mock.`)
+        await delay()
+        return _getMockStudentMonthlyAttendance(studentId, month, year)
+      }
+      throw new Error('Error al obtener la asistencia mensual del estudiante')
+    }
+    return res.json()
+  } catch (err) {
+    console.warn(`GET /api/v1/attendance/students/${studentId}/monthly failed. Falling back to mock.`, err)
+    await delay()
+    return _getMockStudentMonthlyAttendance(studentId, month, year)
+  }
+}
+
+function _getMockStudentMonthlyAttendance(studentId, month, year = 2026) {
+  const student = _mockUsers.find(u => u.id === studentId || u.id_number === studentId)
+  if (!student) return []
+
+  const monthNum = parseInt(month, 10)
+  if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) return []
+
+  const yearNum = parseInt(year, 10) || 2026
+
+  // 1. Obtener materias del estudiante
+  const studentSubjects = _mockAssignments.filter(a => a.student_id === student.id && a.period === String(yearNum))
+  const subjectsMap = {}
+  studentSubjects.forEach(item => {
+    const subject = _mockSubjects.find(s => s.id === item.subject_id)
+    const teacher = _mockUsers.find(u => u.id === item.teacher_id)
+    const group = _mockGroups.find(g => g.id === item.group_id)
+    if (subject) {
+      subjectsMap[item.subject_id] = {
+        id: item.subject_id,
+        name: subject.name,
+        code: subject.code,
+        teacher_name: teacher ? `${teacher.first_name} ${teacher.last_name}` : 'Sin docente',
+        group_id: item.group_id,
+        group_name: group ? group.name : 'Sin sección'
+      }
+    }
+  })
+
+  // Si el estudiante no tiene materias registradas, usamos materias mock genéricas de su nivel
+  if (Object.keys(subjectsMap).length === 0) {
+    _mockSubjects.forEach(s => {
+      subjectsMap[s.id] = {
+        id: s.id,
+        name: s.name,
+        code: s.code,
+        teacher_name: 'Carlos Alvarado',
+        group_id: student.group_id || '64f91ba48c0840b2a8d3e900',
+        group_name: '7-A'
+      }
+    })
+  }
+
+  // 2. Generar registros para cada día del mes
+  const daysInMonth = new Date(yearNum, monthNum, 0).getDate()
+  const results = []
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${yearNum}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    
+    // Solo días entre semana
+    const dayOfWeek = new Date(yearNum, monthNum - 1, day).getDay()
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue
+
+    Object.values(subjectsMap).forEach(sub => {
+      // Buscar si hay registro explícito en _mockAttendance
+      const realRecord = _mockAttendance.find(
+        att => att.date === dateStr &&
+               att.subject_id === sub.id &&
+               att.group_id === sub.group_id
+      )
+
+      if (realRecord) {
+        const studentDetail = realRecord.records.find(r => r.student_id === student.id)
+        if (studentDetail) {
+          results.push({
+            id: `att_${realRecord.id}_${student.id}`,
+            date: dateStr,
+            status: studentDetail.status,
+            arrival_time: studentDetail.arrival_time || null,
+            subject_id: sub.id,
+            subject_name: sub.name,
+            subject_code: sub.code,
+            teacher_name: sub.teacher_name,
+            group_id: sub.group_id,
+            group_name: sub.group_name
+          })
+          return
+        }
+      }
+
+      // Generación determinista basada en el día, mes, y IDs
+      const charSum = student.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) +
+                      sub.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+      const daySeed = (day * 3 + monthNum * 7 + charSum) % 100
+
+      let status = 'presente'
+      let arrival_time = null
+
+      if (daySeed < 6) {
+        status = 'ausente'
+      } else if (daySeed < 12) {
+        status = 'tardanza'
+        arrival_time = `07:${String(10 + (daySeed % 15)).padStart(2, '0')}`
+      } else if (daySeed < 15) {
+        status = 'justificado'
+      }
+
+      results.push({
+        id: `att_mock_gen_${student.id}_${sub.id}_${dateStr}`,
+        date: dateStr,
+        status: status,
+        arrival_time: arrival_time,
+        subject_id: sub.id,
+        subject_name: sub.name,
+        subject_code: sub.code,
+        teacher_name: sub.teacher_name,
+        group_id: sub.group_id,
+        group_name: sub.group_name
+      })
+    })
+  }
+
+  return results
+}
+
+

@@ -76,9 +76,10 @@ export default function AdminUsers() {
         if (statusFilter !== 'all') filters.active = statusFilter
         data = await getUsers(filters)
       }
-      setUsers(data)
+      setUsers(Array.isArray(data) ? data : [])
     } catch (err) {
       setErrorMsg(err.message || 'Error al cargar usuarios')
+      setUsers([])
     } finally {
       setLoading(false)
     }
@@ -87,9 +88,10 @@ export default function AdminUsers() {
   const loadGroups = useCallback(async () => {
     try {
       const data = await listGroups()
-      setGroups(data)
+      setGroups(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Error al cargar grupos', err)
+      setGroups([])
     }
   }, [])
 
@@ -110,18 +112,21 @@ export default function AdminUsers() {
     try {
       if (user.role === 'parent') {
         const children = await getParentChildren(user.id)
-        setDrawerRelations(children)
+        setDrawerRelations(Array.isArray(children) ? children : [])
       } else if (user.role === 'student') {
         // Cargar materias
         const subjects = await getStudentSubjects(user.id)
-        setDrawerSubjects(subjects)
+        setDrawerSubjects(Array.isArray(subjects) ? subjects : [])
         // Intentar buscar el encargado de este estudiante
         const allParents = await getUsers({ role: 'parent' })
-        const parentList = allParents.filter(p => p.id_number === user.parent_cedula)
+        const sanitizedParents = Array.isArray(allParents) ? allParents : []
+        const parentList = sanitizedParents.filter(p => p.id_number === user.parent_cedula)
         setDrawerRelations(parentList)
       }
     } catch (err) {
       console.error('Error al cargar relaciones en detalle', err)
+      setDrawerRelations([])
+      setDrawerSubjects([])
     } finally {
       setDrawerLoading(false)
     }

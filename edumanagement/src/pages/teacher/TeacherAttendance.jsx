@@ -61,11 +61,12 @@ export default function TeacherAttendance() {
     setAlert(null)
     try {
       const groupsData = await listGroups()
-      setGroups(groupsData)
-      if (groupsData.length > 0) {
-        setSelectedGroup(groupsData[0])
+      const sanitizedGroups = Array.isArray(groupsData) ? groupsData : []
+      setGroups(sanitizedGroups)
+      if (sanitizedGroups.length > 0) {
+        setSelectedGroup(sanitizedGroups[0])
         // Establecer también para filtros de historial
-        setHistoryFilters(prev => ({ ...prev, groupId: groupsData[0].id }))
+        setHistoryFilters(prev => ({ ...prev, groupId: sanitizedGroups[0].id }))
       }
     } catch (err) {
       console.error('Error al cargar grupos del docente', err)
@@ -94,7 +95,7 @@ export default function TeacherAttendance() {
       const details = await getGroupDetails(selectedGroup.id)
       
       // Estudiantes
-      const studentsList = details.students || []
+      const studentsList = Array.isArray(details?.students) ? details.students : []
       setStudents(studentsList)
       
       // Inicializar registros de asistencia en 'presente' por defecto
@@ -107,7 +108,7 @@ export default function TeacherAttendance() {
       // 2. Resolver materias del docente en este grupo
       let teacherSubjects = []
       
-      if (details.teachers && details.teachers.length > 0) {
+      if (details && Array.isArray(details.teachers) && details.teachers.length > 0) {
         // Buscar al docente actual en la lista de profesores de este grupo
         const currentTeacher = details.teachers.find(t => 
           t.email === session?.email || 
@@ -115,20 +116,22 @@ export default function TeacherAttendance() {
           t.id === session?.id_number
         )
         
-        if (currentTeacher && currentTeacher.subjects) {
+        if (currentTeacher && Array.isArray(currentTeacher.subjects)) {
           // El backend nos devuelve nombres de materias, necesitamos mapearlas a IDs
           const allSubs = await listSubjects()
-          teacherSubjects = allSubs.filter(sub => currentTeacher.subjects.includes(sub.name))
+          const sanitizedSubs = Array.isArray(allSubs) ? allSubs : []
+          teacherSubjects = sanitizedSubs.filter(sub => currentTeacher.subjects.includes(sub.name))
         }
       }
       
       // Fallback: Si no se encuentran materias asignadas explícitamente, listar todas las materias
       if (teacherSubjects.length === 0) {
         const allSubs = await listSubjects()
+        const sanitizedAllSubs = Array.isArray(allSubs) ? allSubs : []
         // Opcional: filtrar por nivel si coincide
-        teacherSubjects = allSubs.filter(sub => !sub.level || sub.level.toLowerCase() === selectedGroup.level?.toLowerCase())
+        teacherSubjects = sanitizedAllSubs.filter(sub => !sub.level || sub.level.toLowerCase() === selectedGroup.level?.toLowerCase())
         if (teacherSubjects.length === 0) {
-          teacherSubjects = allSubs
+          teacherSubjects = sanitizedAllSubs
         }
       }
       
@@ -144,7 +147,8 @@ export default function TeacherAttendance() {
       // Doble-capa de Fallback si falla getGroupDetails
       try {
         const allUsers = await getUsers({ role: 'student', active: true })
-        const filteredStudents = allUsers.filter(s => s.group_id === selectedGroup.id)
+        const sanitizedUsers = Array.isArray(allUsers) ? allUsers : []
+        const filteredStudents = sanitizedUsers.filter(s => s.group_id === selectedGroup.id)
         setStudents(filteredStudents)
         
         const initialRecords = {}
@@ -154,9 +158,10 @@ export default function TeacherAttendance() {
         setAttendanceRecords(initialRecords)
         
         const allSubs = await listSubjects()
-        setSubjects(allSubs)
-        if (allSubs.length > 0) {
-          setSelectedSubject(allSubs[0])
+        const sanitizedAllSubs = Array.isArray(allSubs) ? allSubs : []
+        setSubjects(sanitizedAllSubs)
+        if (sanitizedAllSubs.length > 0) {
+          setSelectedSubject(sanitizedAllSubs[0])
         }
       } catch (fallbackErr) {
         console.error('Error en fallback de carga', fallbackErr)
@@ -289,8 +294,9 @@ export default function TeacherAttendance() {
         group_id: historyFilters.groupId,
         subject_id: historyFilters.subjectId
       })
-      setHistoryRecords(data)
-      if (data.length === 0) {
+      const sanitizedHistory = Array.isArray(data) ? data : []
+      setHistoryRecords(sanitizedHistory)
+      if (sanitizedHistory.length === 0) {
         setHistoryAlert({ type: 'info', message: 'No se encontraron registros para la fecha y filtros seleccionados.' })
       }
     } catch (err) {
