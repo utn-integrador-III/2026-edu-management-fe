@@ -1253,4 +1253,105 @@ export async function getStudentEvents(studentId, filters = {}) {
   }
 }
 
+function _getMockGroupEvents(groupId, filters = {}) {
+  let list = _mockEvents.filter(e => e.group_id === groupId)
+
+  if (filters.month) {
+    const m = String(parseInt(filters.month, 10)).padStart(2, '0')
+    const y = String(filters.year || 2026)
+    list = list.filter(e => e.start_date.startsWith(`${y}-${m}`) || e.end_date.startsWith(`${y}-${m}`))
+  }
+
+  return [...list].sort((a, b) => a.start_date.localeCompare(b.start_date))
+}
+
+// Obtener el histórico de eventos de una sección (vista de docente)
+export async function getGroupEvents(groupId, filters = {}) {
+  if (USE_MOCK) {
+    await delay()
+    return _getMockGroupEvents(groupId, filters)
+  }
+
+  try {
+    const query = new URLSearchParams()
+    query.append('group_id', groupId)
+    if (filters.month) query.append('month', filters.month)
+    if (filters.year) query.append('year', filters.year)
+
+    const res = await fetch(`/api/v1/calendar/events?${query.toString()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    })
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 501) {
+        console.warn(`GET /api/v1/calendar/events returned ${res.status}. Falling back to mock.`)
+        await delay()
+        return _getMockGroupEvents(groupId, filters)
+      }
+      throw new Error('Error al obtener los eventos de la sección')
+    }
+    return res.json()
+  } catch (err) {
+    console.warn('GET /api/v1/calendar/events failed. Falling back to mock.', err)
+    await delay()
+    return _getMockGroupEvents(groupId, filters)
+  }
+}
+
+function _createMockEvent(data) {
+  const group = _mockGroups.find(g => g.id === data.group_id)
+  const subject = data.subject_id ? _mockSubjects.find(s => s.id === data.subject_id) : null
+
+  const newEvent = {
+    id: 'evt_' + Math.random().toString(36).substr(2, 9),
+    title: data.title,
+    description: data.description || '',
+    event_type: data.event_type || 'academico',
+    start_date: data.start_date,
+    end_date: data.end_date || data.start_date,
+    start_time: data.start_time || null,
+    end_time: data.end_time || null,
+    location: data.location || null,
+    group_id: data.group_id,
+    group_name: group ? group.name : 'Sin sección',
+    subject_id: data.subject_id || null,
+    subject_name: subject ? subject.name : null,
+    organizer_name: data.organizer_name || 'Docente',
+    created_at: new Date().toISOString()
+  }
+
+  _mockEvents.push(newEvent)
+  return newEvent
+}
+
+// Registrar un evento escolar vinculado a una sección (RF-23)
+export async function createEvent(data) {
+  if (USE_MOCK) {
+    await delay()
+    return _createMockEvent(data)
+  }
+
+  try {
+    const res = await fetch('/api/v1/calendar/events', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 501) {
+        console.warn('POST /api/v1/calendar/events returned 404/501. Falling back to mock simulation.')
+        await delay()
+        return _createMockEvent(data)
+      }
+      const d = await res.json().catch(() => ({}))
+      throw new Error(d.detail || 'Error al crear el evento')
+    }
+    return res.json()
+  } catch (err) {
+    console.warn('POST /api/v1/calendar/events failed. Falling back to mock simulation.', err)
+    await delay()
+    return _createMockEvent(data)
+  }
+}
+
 

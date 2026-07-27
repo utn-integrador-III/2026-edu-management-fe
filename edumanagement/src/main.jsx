@@ -16,6 +16,7 @@ import AdminGroups      from './pages/admin/AdminGroups'
 import AdminImport      from './pages/admin/AdminImport'
 import TeacherDashboard  from './pages/teacher/TeacherDashboard'
 import TeacherStudents   from './pages/teacher/TeacherStudents'
+import TeacherCalendar   from './pages/teacher/TeacherCalendar'
 import TeacherAttendance from './pages/teacher/TeacherAttendance'
 import ParentDashboard   from './pages/parent/ParentDashboard'
 import ParentChildren   from './pages/parent/ParentChildren'
@@ -107,7 +108,7 @@ function AppRoutes() {
           <Route path="/teacher/dashboard"  element={<TeacherDashboard />} />
           <Route path="/teacher/attendance" element={<TeacherAttendance />} />
           <Route path="/teacher/grades"     element={<PlaceholderPage title="Calificaciones" />} />
-          <Route path="/teacher/calendar"   element={<PlaceholderPage title="Calendario" />} />
+          <Route path="/teacher/calendar"   element={<TeacherCalendar />} />
           <Route path="/teacher/students"   element={<TeacherStudents />} />
         </Route>
       </Route>
