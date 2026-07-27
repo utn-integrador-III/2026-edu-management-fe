@@ -29,7 +29,11 @@ export default function TeacherStudents() {
     setGroupErrorMsg('')
     try {
       const details = await getGroupDetails(group.id)
-      setGroupDetails(details)
+      setGroupDetails(details ? {
+        ...details,
+        students: Array.isArray(details.students) ? details.students : [],
+        teachers: Array.isArray(details.teachers) ? details.teachers : []
+      } : null)
     } catch (err) {
       setGroupErrorMsg(err.message || 'Error al cargar detalles de la sección')
     } finally {
@@ -42,12 +46,17 @@ export default function TeacherStudents() {
     setLoading(true)
     try {
       const data = await listGroups()
-      setGroups(data)
-      if (data.length > 0) {
-        setSelectedGroup(data[0])
+      const sanitized = Array.isArray(data) ? data : []
+      setGroups(sanitized)
+      if (sanitized.length > 0) {
+        setSelectedGroup(sanitized[0])
+      } else {
+        setSelectedGroup(null)
       }
     } catch (err) {
       console.error('Error al cargar grupos del docente', err)
+      setGroups([])
+      setSelectedGroup(null)
     } finally {
       setLoading(false)
     }
@@ -59,11 +68,13 @@ export default function TeacherStudents() {
     setLoading(true)
     try {
       const data = await getUsers({ role: 'student', active: true })
+      const sanitizedData = Array.isArray(data) ? data : []
       // Filtrar estudiantes por el grupo seleccionado
-      const filtered = data.filter(s => s.group_id === selectedGroup.id)
+      const filtered = sanitizedData.filter(s => s.group_id === selectedGroup.id)
       setStudents(filtered)
     } catch (err) {
       console.error('Error al cargar alumnos de la sección', err)
+      setStudents([])
     } finally {
       setLoading(false)
     }
@@ -86,14 +97,16 @@ export default function TeacherStudents() {
     try {
       // 1. Cargar materias
       const subs = await getStudentSubjects(student.id, '2026')
-      setStudentSubjects(subs)
+      setStudentSubjects(Array.isArray(subs) ? subs : [])
 
       // 2. Buscar encargado
       const allParents = await getUsers({ role: 'parent' })
+      const sanitizedParents = Array.isArray(allParents) ? allParents : []
       let parentFound = null
-      for (const p of allParents) {
+      for (const p of sanitizedParents) {
         const children = await getParentChildren(p.id)
-        if (children.some(c => c.id === student.id)) {
+        const sanitizedChildren = Array.isArray(children) ? children : []
+        if (sanitizedChildren.some(c => c.id === student.id)) {
           parentFound = p
           break
         }
@@ -101,6 +114,8 @@ export default function TeacherStudents() {
       setStudentParent(parentFound)
     } catch (err) {
       console.error('Error al cargar ficha de estudiante', err)
+      setStudentSubjects([])
+      setStudentParent(null)
     } finally {
       setLoadingDetails(false)
     }

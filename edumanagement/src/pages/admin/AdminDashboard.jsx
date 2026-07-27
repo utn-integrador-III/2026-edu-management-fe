@@ -20,10 +20,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function loadStats() {
       try {
-        const [allUsers, allGroups] = await Promise.all([
+        const [usersData, groupsData] = await Promise.all([
           getUsers(),
           listGroups()
         ])
+
+        const allUsers = Array.isArray(usersData) ? usersData : []
+        const allGroups = Array.isArray(groupsData) ? groupsData : []
 
         const teachers = allUsers.filter(u => u.role === 'teacher').length
         const parents = allUsers.filter(u => u.role === 'parent').length
