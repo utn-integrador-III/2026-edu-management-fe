@@ -199,6 +199,146 @@ let _mockParentStudents = [
   }
 ]
 
+// Eventos del calendario académico
+let _mockEvents = [
+  {
+    id: 'evt_1',
+    title: 'Inicio del III Periodo',
+    description: 'Reinicio de lecciones tras el receso de mitad de año. Se retoman los horarios habituales para todas las secciones.',
+    event_type: 'academico',
+    start_date: '2026-07-01',
+    end_date: '2026-07-01',
+    start_time: null,
+    end_time: null,
+    location: 'Todo el centro educativo',
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: null,
+    subject_name: null,
+    organizer_name: 'Dirección Académica',
+    created_at: '2026-06-20T09:00:00.000000'
+  },
+  {
+    id: 'evt_2',
+    title: 'Entrega de notas del II periodo',
+    description: 'Entrega oficial de los informes de calificaciones del segundo periodo a los encargados, con espacio para consultas individuales.',
+    event_type: 'entrega',
+    start_date: '2026-07-10',
+    end_date: '2026-07-10',
+    start_time: '15:00',
+    end_time: '17:00',
+    location: 'Aula 7-A',
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: null,
+    subject_name: null,
+    organizer_name: 'Carlos Alvarado',
+    created_at: '2026-06-25T09:00:00.000000'
+  },
+  {
+    id: 'evt_3',
+    title: 'Examen parcial de Matemáticas',
+    description: 'Evaluación parcial que cubre los temas de álgebra y geometría vistos durante el segundo periodo. Se permite el uso de calculadora básica.',
+    event_type: 'evaluacion',
+    start_date: '2026-07-14',
+    end_date: '2026-07-14',
+    start_time: '08:00',
+    end_time: '09:30',
+    location: 'Aula 7-A',
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: '64f91ba48c0840b2a8d3e111',
+    subject_name: 'Matemáticas',
+    organizer_name: 'Carlos Alvarado',
+    created_at: '2026-06-29T00:46:02.123456'
+  },
+  {
+    id: 'evt_4',
+    title: 'Entrega de proyecto de Ciencias',
+    description: 'Fecha límite para la entrega del proyecto trimestral sobre ecosistemas locales, incluyendo maqueta e informe escrito.',
+    event_type: 'entrega',
+    start_date: '2026-07-20',
+    end_date: '2026-07-20',
+    start_time: '10:00',
+    end_time: '12:00',
+    location: 'Laboratorio de Ciencias',
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: '64f91ba48c0840b2a8d3e112',
+    subject_name: 'Ciencias',
+    organizer_name: 'Juan Pérez García',
+    created_at: '2026-07-01T09:00:00.000000'
+  },
+  {
+    id: 'evt_5',
+    title: 'Examen parcial de Español',
+    description: 'Evaluación escrita sobre comprensión lectora y análisis literario de los textos asignados en el segundo periodo.',
+    event_type: 'evaluacion',
+    start_date: '2026-07-22',
+    end_date: '2026-07-22',
+    start_time: '08:00',
+    end_time: '09:30',
+    location: 'Aula 7-A',
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: '64f91ba48c0840b2a8d3e113',
+    subject_name: 'Español',
+    organizer_name: 'Carlos Alvarado',
+    created_at: '2026-07-05T09:00:00.000000'
+  },
+  {
+    id: 'evt_6',
+    title: 'Día de la Anexión del Partido de Nicoya',
+    description: 'Feriado de pago obligatorio a nivel nacional. No hay lecciones ni actividades académicas.',
+    event_type: 'feriado',
+    start_date: '2026-07-25',
+    end_date: '2026-07-25',
+    start_time: null,
+    end_time: null,
+    location: null,
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: null,
+    subject_name: null,
+    organizer_name: 'Ministerio de Educación Pública',
+    created_at: '2026-06-01T09:00:00.000000'
+  },
+  {
+    id: 'evt_7',
+    title: 'Reunión de padres de familia',
+    description: 'Reunión informativa sobre el avance académico y conductual del grupo durante el segundo periodo. Se solicita la asistencia de al menos un encargado por estudiante.',
+    event_type: 'reunion',
+    start_date: '2026-07-30',
+    end_date: '2026-07-30',
+    start_time: '17:30',
+    end_time: '19:00',
+    location: 'Salón de Actos',
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: null,
+    subject_name: null,
+    organizer_name: 'Dirección Académica',
+    created_at: '2026-07-10T09:00:00.000000'
+  },
+  {
+    id: 'evt_8',
+    title: 'Feria Científica Escolar',
+    description: 'Exposición de proyectos científicos elaborados por los estudiantes de secundaria, abierta a toda la comunidad educativa.',
+    event_type: 'actividad',
+    start_date: '2026-08-05',
+    end_date: '2026-08-06',
+    start_time: '08:00',
+    end_time: '14:00',
+    location: 'Gimnasio Institucional',
+    group_id: '64f91ba48c0840b2a8d3e900',
+    group_name: '7-A',
+    subject_id: '64f91ba48c0840b2a8d3e112',
+    subject_name: 'Ciencias',
+    organizer_name: 'Juan Pérez García',
+    created_at: '2026-07-15T09:00:00.000000'
+  }
+]
+
 // Relación Estudiante-Materias (Asignaciones)
 let _mockAssignments = [
   {
@@ -1060,6 +1200,57 @@ function _getMockStudentMonthlyAttendance(studentId, month, year = 2026) {
   }
 
   return results
+}
+
+// ─────────────────────────────────────────────────────────────
+//  5. MÓDULO DE CALENDARIO
+// ─────────────────────────────────────────────────────────────
+
+function _getMockStudentEvents(studentId, filters = {}) {
+  const student = _mockUsers.find(u => u.id === studentId || u.id_number === studentId)
+  if (!student) return []
+
+  let list = _mockEvents.filter(e => e.group_id === student.group_id)
+
+  if (filters.month) {
+    const m = String(parseInt(filters.month, 10)).padStart(2, '0')
+    const y = String(filters.year || 2026)
+    list = list.filter(e => e.start_date.startsWith(`${y}-${m}`) || e.end_date.startsWith(`${y}-${m}`))
+  }
+
+  return [...list].sort((a, b) => a.start_date.localeCompare(b.start_date))
+}
+
+// Obtener eventos vigentes del calendario asignados al aula del estudiante
+export async function getStudentEvents(studentId, filters = {}) {
+  if (USE_MOCK) {
+    await delay()
+    return _getMockStudentEvents(studentId, filters)
+  }
+
+  try {
+    const query = new URLSearchParams()
+    if (filters.month) query.append('month', filters.month)
+    if (filters.year) query.append('year', filters.year)
+
+    const res = await fetch(`/api/v1/calendar/students/${studentId}/events?${query.toString()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    })
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 501) {
+        console.warn(`GET /api/v1/calendar/students/${studentId}/events returned ${res.status}. Falling back to mock.`)
+        await delay()
+        return _getMockStudentEvents(studentId, filters)
+      }
+      throw new Error('Error al obtener los eventos del calendario')
+    }
+    return res.json()
+  } catch (err) {
+    console.warn(`GET /api/v1/calendar/students/${studentId}/events failed. Falling back to mock.`, err)
+    await delay()
+    return _getMockStudentEvents(studentId, filters)
+  }
 }
 
 
