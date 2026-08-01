@@ -43,7 +43,8 @@ function eventTypeMeta(type) {
 
 function formatFullDate(dateString) {
   if (!dateString) return ''
-  const [y, m, d] = dateString.split('-').map(Number)
+  const cleanDateStr = dateString.split('T')[0]
+  const [y, m, d] = cleanDateStr.split('-').map(Number)
   const dateObj = new Date(y, m - 1, d)
   return dateObj.toLocaleDateString('es-CR', {
     weekday: 'long',
@@ -87,7 +88,12 @@ export default function ParentCalendar() {
     setLoadingEvents(true)
     try {
       const data = await getStudentEvents(childId, { month: m, year: y })
-      setEvents(Array.isArray(data) ? data : [])
+      const sanitized = (Array.isArray(data) ? data : []).map(evt => ({
+        ...evt,
+        start_date: evt.start_date ? evt.start_date.split('T')[0] : '',
+        end_date: evt.end_date ? evt.end_date.split('T')[0] : ''
+      }))
+      setEvents(sanitized)
     } catch (err) {
       console.error('Error al cargar eventos del calendario', err)
       setEvents([])
