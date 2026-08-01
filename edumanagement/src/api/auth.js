@@ -148,6 +148,19 @@ export async function recoverPassword(id_number) {
 }
 
 export async function resetPassword(token, newPassword) {
+  if (USE_MOCK) {
+    await delay()
+    if (!token) {
+      const err = new Error('Enlace de recuperación inválido o expirado')
+      err.status = 400
+      throw err
+    }
+    if (newPassword.length < 8) {
+      throw new Error('La contraseña debe tener al menos 8 caracteres')
+    }
+    return { message: 'Password reset successfully' }
+  }
+
   const res = await fetch('/api/v1/auth/reset-password', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
