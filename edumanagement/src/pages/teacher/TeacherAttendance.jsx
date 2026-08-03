@@ -172,6 +172,44 @@ export default function TeacherAttendance() {
     }
   }, [selectedGroup, session])
 
+  const loadExistingAttendance = useCallback(async (groupId, subjectId, targetDate, studentsList) => {
+    if (!groupId || !subjectId || !targetDate || !studentsList || studentsList.length === 0) return
+    try {
+      const history = await getAttendanceHistory({
+        group_id: groupId,
+        subject_id: subjectId,
+        date: targetDate
+      })
+      if (Array.isArray(history) && history.length > 0 && history[0].records) {
+        const existingRecords = {}
+        studentsList.forEach(s => {
+          existingRecords[s.id] = { status: 'presente', arrivalTime: null }
+        })
+        history[0].records.forEach(rec => {
+          existingRecords[rec.student_id] = {
+            status: rec.status,
+            arrivalTime: rec.arrival_time || null
+          }
+        })
+        setAttendanceRecords(existingRecords)
+      } else {
+        const initialRecords = {}
+        studentsList.forEach(s => {
+          initialRecords[s.id] = { status: 'presente', arrivalTime: null }
+        })
+        setAttendanceRecords(initialRecords)
+      }
+    } catch (err) {
+      console.error('Error al verificar asistencia existente', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedGroup && selectedSubject && date && students.length > 0) {
+      loadExistingAttendance(selectedGroup.id, selectedSubject.id, date, students)
+    }
+  }, [selectedGroup, selectedSubject, date, students, loadExistingAttendance])
+
   useEffect(() => {
     loadGroupDetails()
   }, [selectedGroup, loadGroupDetails])

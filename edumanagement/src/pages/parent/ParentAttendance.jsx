@@ -210,7 +210,8 @@ export default function ParentAttendance() {
   // Formatear fecha legible
   const formatFullDate = (dateString) => {
     if (!dateString) return ''
-    const [y, m, d] = dateString.split('-').map(Number)
+    const cleanDateStr = dateString.split('T')[0]
+    const [y, m, d] = cleanDateStr.split('-').map(Number)
     const dateObj = new Date(y, m - 1, d)
     return dateObj.toLocaleDateString('es-CR', {
       weekday: 'long',
@@ -528,7 +529,7 @@ export default function ParentAttendance() {
                     return (
                       <div
                         key={cell.key}
-                        onClick={() => !cell.isWeekend && matchesFilter.length > 0 && setActiveDay(cell.dateStr)}
+                        onClick={() => matchesFilter.length > 0 && setActiveDay(cell.dateStr)}
                         style={{
                           background: cellBg,
                           border: cellBorder,
@@ -538,7 +539,7 @@ export default function ParentAttendance() {
                           flexDirection: 'column',
                           justifyContent: 'space-between',
                           minHeight: '90px',
-                          cursor: (cell.isWeekend || matchesFilter.length === 0) ? 'default' : 'pointer',
+                          cursor: matchesFilter.length === 0 ? 'default' : 'pointer',
                           transition: 'all 0.12s',
                           boxShadow: isActive ? 'var(--shadow-md)' : 'none',
                           transform: isActive ? 'translateY(-1px)' : 'none',
@@ -563,7 +564,7 @@ export default function ParentAttendance() {
                           </span>
 
                           {/* Indicador de incidencias en este día */}
-                          {!cell.isWeekend && matchesFilter.some(r => r.status !== 'presente') && (
+                          {matchesFilter.some(r => r.status !== 'presente') && (
                             <span style={{
                               width: '6px',
                               height: '6px',
@@ -576,7 +577,7 @@ export default function ParentAttendance() {
                         </div>
 
                         {/* Lista de pills de materias registradas en este día */}
-                        {!cell.isWeekend && (
+                        {matchesFilter.length > 0 && (
                           <div style={{
                             display: 'flex',
                             flexDirection: 'column',
