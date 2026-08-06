@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://two026-edu-management-api.onrender.com',
+        target: 'https://two026-edu-management-api-h0s6.onrender.com',
         changeOrigin: true,
         secure: false,
       },
