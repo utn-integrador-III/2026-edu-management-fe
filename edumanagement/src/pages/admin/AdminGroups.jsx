@@ -27,7 +27,11 @@ export default function AdminGroups() {
     setErrorMsg('')
     try {
       const details = await getGroupDetails(group.id)
-      setSelectedGroupDetails(details)
+      setSelectedGroupDetails(details ? {
+        ...details,
+        students: Array.isArray(details.students) ? details.students : [],
+        teachers: Array.isArray(details.teachers) ? details.teachers : []
+      } : null)
     } catch (err) {
       setErrorMsg(err.message || 'Error al cargar detalles de la sección')
     } finally {
@@ -51,15 +55,18 @@ export default function AdminGroups() {
     setLoading(true)
     try {
       const gList = await listGroups()
-      setGroups(gList)
+      setGroups(Array.isArray(gList) ? gList : [])
 
       const sList = await listSubjects()
-      setSubjects(sList)
+      setSubjects(Array.isArray(sList) ? sList : [])
 
       const uList = await getUsers({ role: 'student', active: true })
-      setStudents(uList)
+      setStudents(Array.isArray(uList) ? uList : [])
     } catch (err) {
       console.error('Error al cargar datos de grupos/materias', err)
+      setGroups([])
+      setSubjects([])
+      setStudents([])
     } finally {
       setLoading(false)
     }

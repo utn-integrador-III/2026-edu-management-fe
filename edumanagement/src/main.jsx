@@ -14,10 +14,14 @@ import AdminUsers       from './pages/admin/AdminUsers'
 import AdminStudents    from './pages/admin/AdminStudents'
 import AdminGroups      from './pages/admin/AdminGroups'
 import AdminImport      from './pages/admin/AdminImport'
-import TeacherDashboard from './pages/teacher/TeacherDashboard'
-import TeacherStudents  from './pages/teacher/TeacherStudents'
-import ParentDashboard  from './pages/parent/ParentDashboard'
+import TeacherDashboard  from './pages/teacher/TeacherDashboard'
+import TeacherStudents   from './pages/teacher/TeacherStudents'
+import TeacherCalendar   from './pages/teacher/TeacherCalendar'
+import TeacherAttendance from './pages/teacher/TeacherAttendance'
+import ParentDashboard   from './pages/parent/ParentDashboard'
 import ParentChildren   from './pages/parent/ParentChildren'
+import ParentAttendance from './pages/parent/ParentAttendance'
+import ParentCalendar   from './pages/parent/ParentCalendar'
 import AppShell         from './components/AppShell'
 
 const ROLE_DASHBOARD = {
@@ -102,9 +106,9 @@ function AppRoutes() {
       <Route element={<RequireAuth role="teacher" />}>
         <Route element={<AppShell />}>
           <Route path="/teacher/dashboard"  element={<TeacherDashboard />} />
-          <Route path="/teacher/attendance" element={<PlaceholderPage title="Asistencia" />} />
+          <Route path="/teacher/attendance" element={<TeacherAttendance />} />
           <Route path="/teacher/grades"     element={<PlaceholderPage title="Calificaciones" />} />
-          <Route path="/teacher/calendar"   element={<PlaceholderPage title="Calendario" />} />
+          <Route path="/teacher/calendar"   element={<TeacherCalendar />} />
           <Route path="/teacher/students"   element={<TeacherStudents />} />
         </Route>
       </Route>
@@ -114,9 +118,9 @@ function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/parent/dashboard"     element={<ParentDashboard />} />
           <Route path="/parent/children"      element={<ParentChildren />} />
-          <Route path="/parent/attendance"    element={<PlaceholderPage title="Asistencia" />} />
+          <Route path="/parent/attendance"    element={<ParentAttendance />} />
           <Route path="/parent/grades"        element={<PlaceholderPage title="Calificaciones" />} />
-          <Route path="/parent/calendar"      element={<PlaceholderPage title="Calendario" />} />
+          <Route path="/parent/calendar"      element={<ParentCalendar />} />
           <Route path="/parent/notifications" element={<PlaceholderPage title="Notificaciones" />} />
         </Route>
       </Route>
