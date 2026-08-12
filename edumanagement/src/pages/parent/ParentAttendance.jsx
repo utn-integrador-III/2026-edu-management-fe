@@ -4,11 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  CheckCircle2,
-  AlertTriangle,
   Clock,
   User,
-  BookOpen,
   Heart,
   Info,
   CalendarDays,
@@ -68,7 +65,6 @@ export default function ParentAttendance() {
   const [loadingChildren, setLoadingChildren] = useState(false)
 
   const [subjects, setSubjects] = useState([])
-  const [loadingSubjects, setLoadingSubjects] = useState(false)
 
   const [attendance, setAttendance] = useState([])
   const [loadingAttendance, setLoadingAttendance] = useState(false)

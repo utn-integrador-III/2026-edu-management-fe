@@ -351,3 +351,30 @@ export async function createEvent(data) {
   }
   return res.json()
 }
+
+// Actualizar un evento escolar (US-R3-FE-026)
+export async function updateEvent(eventId, data) {
+  const res = await fetch(`/api/v1/calendar/events/${eventId}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    throw new Error(d.detail || 'Error al actualizar el evento')
+  }
+  return res.json()
+}
+
+// Eliminar un evento escolar (US-R3-FE-026)
+export async function deleteEvent(eventId) {
+  const res = await fetch(`/api/v1/calendar/events/${eventId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    throw new Error(d.detail || 'Error al eliminar el evento')
+  }
+  return res.json()
+}

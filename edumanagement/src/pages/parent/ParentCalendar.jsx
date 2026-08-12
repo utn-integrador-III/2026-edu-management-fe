@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,7 +12,7 @@ import {
   Heart,
   X
 } from 'lucide-react'
-import { getMyChildren, getStudentEvents } from '../../api/edu'
+import { getMyChildren, getStudentEvents, getStudentSubjects } from '../../api/edu'
 
 const MONTHS = [
   { value: 1, label: 'Enero' },
@@ -55,12 +56,17 @@ function formatFullDate(dateString) {
 }
 
 export default function ParentCalendar() {
+  const location = useLocation()
+  const stateStudentId = location.state?.studentId
+
   const [children, setChildren] = useState([])
   const [selectedChild, setSelectedChild] = useState(null)
   const [loadingChildren, setLoadingChildren] = useState(false)
 
   const [events, setEvents] = useState([])
   const [loadingEvents, setLoadingEvents] = useState(false)
+
+  const [subjects, setSubjects] = useState([])
 
   const [year, setYear] = useState(2026)
   const [month, setMonth] = useState(7)
@@ -73,6 +79,13 @@ export default function ParentCalendar() {
       const list = await getMyChildren()
       const sanitized = Array.isArray(list) ? list : []
       setChildren(sanitized)
+      if (stateStudentId) {
+        const found = sanitized.find(c => c.id === stateStudentId)
+        if (found) {
+          setSelectedChild(found)
+          return
+        }
+      }
       setSelectedChild(sanitized.length > 0 ? sanitized[0] : null)
     } catch (err) {
       console.error('Error al obtener hijos del encargado', err)
@@ -81,7 +94,7 @@ export default function ParentCalendar() {
     } finally {
       setLoadingChildren(false)
     }
-  }, [])
+  }, [stateStudentId])
 
   const loadEvents = useCallback(async (childId, m, y) => {
     if (!childId) return
@@ -102,6 +115,17 @@ export default function ParentCalendar() {
     }
   }, [])
 
+  const loadSubjects = useCallback(async (childId) => {
+    if (!childId) return
+    try {
+      const data = await getStudentSubjects(childId, '2026')
+      setSubjects(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Error al cargar materias del hijo en calendario', err)
+      setSubjects([])
+    }
+  }, [])
+
   useEffect(() => {
     loadChildren()
   }, [loadChildren])
@@ -109,8 +133,9 @@ export default function ParentCalendar() {
   useEffect(() => {
     if (selectedChild) {
       loadEvents(selectedChild.id, month, year)
+      loadSubjects(selectedChild.id)
     }
-  }, [selectedChild, month, year, loadEvents])
+  }, [selectedChild, month, year, loadEvents, loadSubjects])
 
   const handlePrevMonth = () => {
     setMonth(prev => (prev === 1 ? 12 : prev - 1))
@@ -419,19 +444,23 @@ export default function ParentCalendar() {
                   <span className="text-body">{selectedEvent.location}</span>
                 </div>
               )}
-              {selectedEvent.subject_name && (
+              {(selectedEvent.subject_name || (selectedEvent.subject_id && subjects.find(s => s.id === selectedEvent.subject_id)?.name)) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <BookOpen size={16} strokeWidth={1.5} color="var(--neutral-400)" />
-                  <span className="text-body">Materia: <strong>{selectedEvent.subject_name}</strong></span>
+                  <span className="text-body">
+                    Materia: <strong>{selectedEvent.subject_name || subjects.find(s => s.id === selectedEvent.subject_id)?.name}</strong>
+                  </span>
                 </div>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <User size={16} strokeWidth={1.5} color="var(--neutral-400)" />
-                <span className="text-body">Organiza: <strong>{selectedEvent.organizer_name}</strong></span>
+                <span className="text-body">Organiza: <strong>{selectedEvent.organizer_name || 'Centro Educativo'}</strong></span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CalendarDays size={16} strokeWidth={1.5} color="var(--neutral-400)" />
-                <span className="text-body">Sección: <strong>{selectedEvent.group_name}</strong></span>
+                <span className="text-body">
+                  Ámbito: <strong>{selectedEvent.scope === 'institution' ? 'Institucional (Todo el centro)' : (selectedEvent.group_name || selectedChild?.group_name || 'Sección del estudiante')}</strong>
+                </span>
               </div>
             </div>
 

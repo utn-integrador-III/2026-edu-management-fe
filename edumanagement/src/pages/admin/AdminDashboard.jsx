@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Users, Heart, GraduationCap, BookOpen, Upload,
-  Calendar, FileSpreadsheet, ArrowRight, Shield, CheckCircle
+  FileSpreadsheet, ArrowRight, Shield, CheckCircle
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { getUsers, listGroups } from '../../api/edu'
