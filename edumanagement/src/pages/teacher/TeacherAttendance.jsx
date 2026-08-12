@@ -322,7 +322,7 @@ export default function TeacherAttendance() {
   };
 
   // --- Funciones de Historial ---
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     setHistoryAlert(null)
     setHistoryRecords([])
@@ -344,7 +344,7 @@ export default function TeacherAttendance() {
     } finally {
       setLoadingHistory(false)
     }
-  };
+  }, [historyFilters.date, historyFilters.groupId, historyFilters.subjectId]);
 
   // Descargar el reporte de asistencia de un registro histórico en formato PDF
   const handleDownloadReportPdf = async (historyLog) => {
@@ -378,7 +378,7 @@ export default function TeacherAttendance() {
     if (activeTab === 'history' && historyFilters.groupId && historyFilters.subjectId) {
       loadHistory()
     }
-  }, [activeTab])
+  }, [activeTab, historyFilters.groupId, historyFilters.subjectId, loadHistory])
 
   // Estilos visuales para los botones de estado
   const getButtonStyle = (statusType, activeStatus) => {

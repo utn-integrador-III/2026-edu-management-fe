@@ -1,3 +1,4 @@
+/* eslint-disable react/only-export-components */
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'

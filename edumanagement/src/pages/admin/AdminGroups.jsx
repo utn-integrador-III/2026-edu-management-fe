@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  BookOpen, Layers, Plus, Book, Calendar, X,
+  BookOpen, Layers, Plus, X,
   Check, AlertTriangle, ChevronRight, Hash
 } from 'lucide-react'
 import {

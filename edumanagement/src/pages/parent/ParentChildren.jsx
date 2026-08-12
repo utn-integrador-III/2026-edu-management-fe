@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { GraduationCap, BookOpen, User, Calendar, Heart, ShieldAlert } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { BookOpen, User, Heart, ShieldAlert, CalendarDays } from 'lucide-react'
 import { getMyChildren, getStudentSubjects } from '../../api/edu'
 
 export default function ParentChildren() {
+  const navigate = useNavigate()
   const [children, setChildren] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedChild, setSelectedChild] = useState(null)
@@ -160,9 +162,33 @@ export default function ParentChildren() {
                       </p>
                     </div>
                   </div>
-                  <span className="badge badge-amber" style={{ color: '#fff', border: '1px solid rgba(255,255,255,0.4)', padding: '5px 12px' }}>
-                    Periodo Escolar 2026
-                  </span>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="badge badge-amber" style={{ color: '#fff', border: '1px solid rgba(255,255,255,0.4)', padding: '5px 12px' }}>
+                      Periodo Escolar 2026
+                    </span>
+                    <button
+                      onClick={() => navigate('/parent/calendar', { state: { studentId: selectedChild.id } })}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.15)',
+                        color: '#fff',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '6px 14px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'background 0.15s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+                    >
+                      <CalendarDays size={16} strokeWidth={1.5} />
+                      Ver Calendario
+                    </button>
+                  </div>
                 </div>
 
                 {/* Materias y Profesores */}
