@@ -305,6 +305,28 @@ export async function getStudentMonthlyAttendance(studentId, month, year = 2026)
   return res.json()
 }
 
+// Descargar reporte de asistencia en formato PDF (Blob)
+// NOTA: Endpoint propuesto siguiendo la convención de /api/v1/attendance del backend.
+// Aún no está confirmado que el backend lo tenga implementado.
+export async function downloadAttendanceReportPdf(filters = {}) {
+  const query = new URLSearchParams()
+  if (filters.date) query.append('date', filters.date)
+  if (filters.group_id) query.append('group_id', filters.group_id)
+  if (filters.subject_id) query.append('subject_id', filters.subject_id)
+
+  const res = await fetch(`/api/v1/attendance/report/pdf?${query.toString()}`, {
+    method: 'GET',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    const err = new Error(d.detail || 'Error al descargar el reporte PDF')
+    err.status = res.status
+    throw err
+  }
+  return res.blob()
+}
+
 // ─────────────────────────────────────────────────────────────
 //  5. MÓDULO DE CALENDARIO
 // ─────────────────────────────────────────────────────────────
