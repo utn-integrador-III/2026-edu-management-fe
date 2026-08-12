@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, ClipboardList, CheckCircle2, AlertTriangle, Clock, History, Save, Check } from 'lucide-react'
+import { Calendar, Users, BookOpen, ClipboardList, CheckCircle2, AlertTriangle, Clock, History, Save, Check, Download, Loader2 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { listGroups, getGroupDetails, getUsers, listSubjects, saveAttendance, getAttendanceHistory } from '../../api/edu'
+import { listGroups, getGroupDetails, getUsers, listSubjects, saveAttendance, getAttendanceHistory, downloadAttendanceReportPdf } from '../../api/edu'
 
 export default function TeacherAttendance() {
   const { session } = useAuth()
@@ -46,6 +46,7 @@ export default function TeacherAttendance() {
   const [historyRecords, setHistoryRecords] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyAlert, setHistoryAlert] = useState(null)
+  const [downloadingReportId, setDownloadingReportId] = useState(null)
 
   // Obtener hora actual en formato HH:MM
   const getCurrentTimeStr = () => {
@@ -344,6 +345,33 @@ export default function TeacherAttendance() {
       setLoadingHistory(false)
     }
   }, [historyFilters.date, historyFilters.groupId, historyFilters.subjectId]);
+
+  // Descargar el reporte de asistencia de un registro histórico en formato PDF
+  const handleDownloadReportPdf = async (historyLog) => {
+    const reportId = historyLog.id || `${historyLog.date}-${historyLog.group_id}-${historyLog.subject_id}`
+    setDownloadingReportId(reportId)
+    setHistoryAlert(null)
+    try {
+      const blob = await downloadAttendanceReportPdf({
+        date: historyLog.date,
+        group_id: historyLog.group_id,
+        subject_id: historyLog.subject_id
+      })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `reporte-asistencia-${historyLog.date}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+      setHistoryAlert({ type: 'error', message: err.message || 'No se pudo descargar el reporte PDF. Es posible que esta función aún no esté disponible en el servidor.' })
+    } finally {
+      setDownloadingReportId(null)
+    }
+  };
 
   // Cargar historial por defecto en la pestaña de historial al activarse
   useEffect(() => {
@@ -808,6 +836,24 @@ export default function TeacherAttendance() {
                         Fecha: <strong>{historyLog.date}</strong> | Sección: <strong>{currentGrp?.name || 'Sección'}</strong> | Materia: <strong>{currentSub?.name || 'Materia'}</strong>
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={downloadingReportId === (historyLog.id || `${historyLog.date}-${historyLog.group_id}-${historyLog.subject_id}`)}
+                      onClick={() => handleDownloadReportPdf(historyLog)}
+                    >
+                      {downloadingReportId === (historyLog.id || `${historyLog.date}-${historyLog.group_id}-${historyLog.subject_id}`) ? (
+                        <>
+                          <Loader2 size={16} className="spin" />
+                          Generando...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={16} />
+                          Descargar Reporte PDF
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   {/* Tarjetas de Métricas de Asistencia (Alineado con el diseño premium) */}
