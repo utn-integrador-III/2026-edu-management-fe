@@ -25,7 +25,9 @@ import {
   getStudentMonthlyAttendance,
   getStudentEvents,
   getGroupEvents,
-  createEvent
+  createEvent,
+  updateEvent,
+  deleteEvent
 } from '../src/api/edu'
 
 describe('Edu API Functions', () => {
@@ -329,6 +331,28 @@ describe('Edu API Functions', () => {
         method: 'POST',
         headers: standardHeaders,
         body: JSON.stringify(eventData)
+      })
+      expect(result).toEqual({})
+    })
+
+    it('updateEvent sends PUT request to update event details', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      const eventData = { title: 'Charla Editada' }
+      const result = await updateEvent('evt-1', eventData)
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/calendar/events/evt-1', {
+        method: 'PUT',
+        headers: standardHeaders,
+        body: JSON.stringify(eventData)
+      })
+      expect(result).toEqual({})
+    })
+
+    it('deleteEvent sends DELETE request to remove event', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      const result = await deleteEvent('evt-1')
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/calendar/events/evt-1', {
+        method: 'DELETE',
+        headers: standardHeaders
       })
       expect(result).toEqual({})
     })

@@ -12,10 +12,12 @@ import {
   X,
   Users,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Edit,
+  Trash2
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { listGroups, getGroupDetails, listSubjects, getGroupEvents, createEvent } from '../../api/edu'
+import { listGroups, getGroupDetails, listSubjects, getGroupEvents, createEvent, updateEvent, deleteEvent } from '../../api/edu'
 
 const MONTHS = [
   { value: 1, label: 'Enero' },
@@ -92,6 +94,16 @@ export default function TeacherCalendar() {
   const [formErr, setFormErr] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [createAlert, setCreateAlert] = useState(null)
+
+  // Estados para Edición y Eliminación (US-R3-FE-026)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState(EMPTY_FORM)
+  const [editFormErr, setEditFormErr] = useState({})
+  const [editAlert, setEditAlert] = useState(null)
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteAlert, setDeleteAlert] = useState(null)
 
   // Cargar secciones a las que el docente tiene acceso
   const loadGroups = useCallback(async () => {
@@ -208,6 +220,52 @@ export default function TeacherCalendar() {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
     setFormErr(prev => ({ ...prev, [name]: '' }))
+  }
+
+  // Handlers para Edición y Eliminación (US-R3-FE-026)
+  function openEditModal(event) {
+    if (!event) return
+    setEditForm({
+      id: event.id,
+      title: event.title || '',
+      description: event.description || '',
+      event_type: event.event_type || 'academico',
+      start_date: event.start_date ? event.start_date.split('T')[0] : todayStr(),
+      end_date: event.end_date ? event.end_date.split('T')[0] : '',
+      start_time: event.start_time || '',
+      end_time: event.end_time || '',
+      location: event.location || '',
+      subject_id: event.subject_id || ''
+    })
+    setEditFormErr({})
+    setEditAlert(null)
+    setShowEditModal(true)
+    setSelectedEvent(null) // Cierra el modal de detalle
+  }
+
+  function handleEditFormChange(e) {
+    const { name, value } = e.target
+    setEditForm(prev => ({ ...prev, [name]: value }))
+    setEditFormErr(prev => ({ ...prev, [name]: '' }))
+  }
+
+  function openDeleteConfirm(event) {
+    if (!event) return
+    setEditForm({
+      id: event.id,
+      title: event.title || '',
+      description: event.description || '',
+      event_type: event.event_type || 'academico',
+      start_date: event.start_date ? event.start_date.split('T')[0] : todayStr(),
+      end_date: event.end_date ? event.end_date.split('T')[0] : '',
+      start_time: event.start_time || '',
+      end_time: event.end_time || '',
+      location: event.location || '',
+      subject_id: event.subject_id || ''
+    })
+    setDeleteAlert(null)
+    setShowDeleteConfirm(true)
+    setSelectedEvent(null) // Cierra el modal de detalle
   }
 
   function validateForm() {
@@ -529,8 +587,26 @@ export default function TeacherCalendar() {
               </div>
             </div>
 
-            <div style={{ marginTop: '24px', textAlign: 'right' }}>
-              <button className="btn btn-secondary" onClick={() => setSelectedEvent(null)}>
+            <div style={{ marginTop: '28px', borderTop: '1px solid var(--neutral-100)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--blue-600)', border: '1px solid var(--blue-200)', background: 'var(--blue-50)', padding: '6px 12px', fontSize: '13px' }}
+                  onClick={() => openEditModal(selectedEvent)}
+                >
+                  <Edit size={14} strokeWidth={1.5} />
+                  Editar
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-danger)', border: '1px solid #fecaca', background: 'var(--color-danger-bg)', padding: '6px 12px', fontSize: '13px' }}
+                  onClick={() => openDeleteConfirm(selectedEvent)}
+                >
+                  <Trash2 size={14} strokeWidth={1.5} />
+                  Eliminar
+                </button>
+              </div>
+              <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={() => setSelectedEvent(null)}>
                 Cerrar
               </button>
             </div>
@@ -710,6 +786,213 @@ export default function TeacherCalendar() {
                 disabled={submitting}
               >
                 {submitting ? 'Guardando...' : 'Crear Evento'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edición de evento (US-R3-FE-026) */}
+      {showEditModal && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowEditModal(false)}>
+          <div className="modal-card" style={{ maxWidth: '520px', width: '90%' }}>
+            <div className="modal-header">
+              <p className="login-card-title">Editar Evento</p>
+              <button className="modal-close-btn" onClick={() => setShowEditModal(false)}>
+                <X size={20} strokeWidth={1.5} />
+              </button>
+            </div>
+
+            <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
+              <AlertCircle size={16} strokeWidth={1.5} />
+              <span>Funcionalidad de guardado deshabilitada temporalmente en el backend.</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="field-group">
+                <label className="field-label" htmlFor="edit_title">Título del evento</label>
+                <input
+                  id="edit_title"
+                  name="title"
+                  type="text"
+                  className={`field-input${editFormErr.title ? ' error' : ''}`}
+                  placeholder="Ej: Examen parcial de Matemáticas"
+                  value={editForm.title}
+                  onChange={handleEditFormChange}
+                />
+                {editFormErr.title && <span className="field-error">{editFormErr.title}</span>}
+              </div>
+
+              <div className="field-group">
+                <label className="field-label" htmlFor="edit_description">Descripción</label>
+                <textarea
+                  id="edit_description"
+                  name="description"
+                  className="field-input"
+                  rows={3}
+                  placeholder="Detalles adicionales para los padres y estudiantes..."
+                  value={editForm.description}
+                  onChange={handleEditFormChange}
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="field-group">
+                  <label className="field-label" htmlFor="edit_event_type">Tipo de evento</label>
+                  <select
+                    id="edit_event_type"
+                    name="event_type"
+                    className="field-input"
+                    value={editForm.event_type}
+                    onChange={handleEditFormChange}
+                  >
+                    {Object.entries(EVENT_TYPE_META).map(([key, meta]) => (
+                      <option key={key} value={key}>{meta.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label" htmlFor="edit_subject_id">Materia (opcional)</label>
+                  <select
+                    id="edit_subject_id"
+                    name="subject_id"
+                    className="field-input"
+                    value={editForm.subject_id}
+                    onChange={handleEditFormChange}
+                  >
+                    <option value="">General de la sección</option>
+                    {teacherSubjects.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="field-group">
+                  <label className="field-label" htmlFor="edit_start_date">Fecha inicio</label>
+                  <input
+                    id="edit_start_date"
+                    name="start_date"
+                    type="date"
+                    className={`field-input${editFormErr.start_date ? ' error' : ''}`}
+                    value={editForm.start_date}
+                    onChange={handleEditFormChange}
+                  />
+                  {editFormErr.start_date && <span className="field-error">{editFormErr.start_date}</span>}
+                </div>
+                <div className="field-group">
+                  <label className="field-label" htmlFor="edit_end_date">Fecha fin (opcional)</label>
+                  <input
+                    id="edit_end_date"
+                    name="end_date"
+                    type="date"
+                    className={`field-input${editFormErr.end_date ? ' error' : ''}`}
+                    value={editForm.end_date}
+                    onChange={handleEditFormChange}
+                  />
+                  {editFormErr.end_date && <span className="field-error">{editFormErr.end_date}</span>}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="field-group">
+                  <label className="field-label" htmlFor="edit_start_time">Hora inicio (opcional)</label>
+                  <input
+                    id="edit_start_time"
+                    name="start_time"
+                    type="time"
+                    className="field-input"
+                    value={editForm.start_time}
+                    onChange={handleEditFormChange}
+                  />
+                </div>
+                <div className="field-group">
+                  <label className="field-label" htmlFor="edit_end_time">Hora fin (opcional)</label>
+                  <input
+                    id="edit_end_time"
+                    name="end_time"
+                    type="time"
+                    className={`field-input${editFormErr.end_time ? ' error' : ''}`}
+                    value={editForm.end_time}
+                    onChange={handleEditFormChange}
+                  />
+                  {editFormErr.end_time && <span className="field-error">{editFormErr.end_time}</span>}
+                </div>
+              </div>
+
+              <div className="field-group">
+                <label className="field-label" htmlFor="edit_location">Ubicación (opcional)</label>
+                <input
+                  id="edit_location"
+                  name="location"
+                  type="text"
+                  className="field-input"
+                  placeholder="Ej: Aula 7-A, Gimnasio, Laboratorio..."
+                  value={editForm.location}
+                  onChange={handleEditFormChange}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+              <button
+                className="btn btn-secondary btn-md"
+                style={{ flex: 1 }}
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-primary btn-md"
+                style={{ flex: 1, opacity: 0.5, cursor: 'not-allowed' }}
+                disabled={true}
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación (US-R3-FE-026) */}
+      {showDeleteConfirm && (
+        <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="modal-card" style={{ maxWidth: '420px', width: '90%' }}>
+            <div className="modal-header">
+              <p className="login-card-title">Eliminar Evento</p>
+              <button className="modal-close-btn" onClick={() => setShowDeleteConfirm(false)}>
+                <X size={20} strokeWidth={1.5} />
+              </button>
+            </div>
+
+            <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
+              <AlertCircle size={16} strokeWidth={1.5} />
+              <span>Funcionalidad de eliminación deshabilitada temporalmente en el backend.</span>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <p className="text-body" style={{ color: 'var(--neutral-700)', lineHeight: 1.5 }}>
+                ¿Está seguro de que desea eliminar el evento <strong>{editForm.title}</strong>? Esta acción no se puede deshacer y el evento dejará de mostrarse a los encargados y estudiantes.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-secondary btn-md"
+                style={{ flex: 1 }}
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-primary btn-md"
+                style={{ flex: 1, background: 'var(--color-danger)', border: '1px solid #fecaca', opacity: 0.5, cursor: 'not-allowed' }}
+                disabled={true}
+              >
+                Confirmar Eliminación
               </button>
             </div>
           </div>
