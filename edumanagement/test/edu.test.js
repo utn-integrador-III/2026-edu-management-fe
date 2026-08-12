@@ -23,6 +23,7 @@ import {
   saveAttendance,
   getAttendanceHistory,
   getStudentMonthlyAttendance,
+  downloadAttendanceReportPdf,
   getStudentEvents,
   getGroupEvents,
   createEvent,
@@ -299,6 +300,27 @@ describe('Edu API Functions', () => {
         headers: standardHeaders
       })
       expect(result).toEqual([])
+    })
+
+    it('downloadAttendanceReportPdf fetches the report as a Blob with filters', async () => {
+      const mockBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+      mockFetch.mockResolvedValueOnce({ ok: true, blob: async () => mockBlob })
+      const result = await downloadAttendanceReportPdf({ date: '2026-08-12', group_id: 'g1', subject_id: 'sub-1' })
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/attendance/report/pdf?date=2026-08-12&group_id=g1&subject_id=sub-1', {
+        method: 'GET',
+        headers: standardHeaders
+      })
+      expect(result).toBe(mockBlob)
+    })
+
+    it('downloadAttendanceReportPdf throws with backend detail message on failure', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ detail: 'Reporte no disponible' })
+      })
+      await expect(downloadAttendanceReportPdf({ date: '2026-08-12' }))
+        .rejects.toThrow('Reporte no disponible')
     })
   })
 
