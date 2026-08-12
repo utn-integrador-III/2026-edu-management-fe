@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Users, BookOpen, ClipboardList, CheckCircle2, AlertTriangle, Clock, History, Save, Check } from 'lucide-react'
+import { Users, ClipboardList, CheckCircle2, AlertTriangle, Clock, History, Save, Check } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { listGroups, getGroupDetails, getUsers, listSubjects, saveAttendance, getAttendanceHistory } from '../../api/edu'
 
@@ -321,7 +321,7 @@ export default function TeacherAttendance() {
   };
 
   // --- Funciones de Historial ---
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     setHistoryAlert(null)
     setHistoryRecords([])
@@ -343,14 +343,14 @@ export default function TeacherAttendance() {
     } finally {
       setLoadingHistory(false)
     }
-  };
+  }, [historyFilters.date, historyFilters.groupId, historyFilters.subjectId]);
 
   // Cargar historial por defecto en la pestaña de historial al activarse
   useEffect(() => {
     if (activeTab === 'history' && historyFilters.groupId && historyFilters.subjectId) {
       loadHistory()
     }
-  }, [activeTab])
+  }, [activeTab, historyFilters.groupId, historyFilters.subjectId, loadHistory])
 
   // Estilos visuales para los botones de estado
   const getButtonStyle = (statusType, activeStatus) => {

@@ -1,0 +1,41 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - min
+      - dev
+  pull_request:
+    branches:
+      - main
+      - min
+      - dev
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: edumanagement/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: edumanagement
+
+      - name: Run linter
+        run: npm run lint
+        working-directory: edumanagement
+        continue-on-error: true # Let lint warning not block testing if configured loosely
+
+      - name: Run unit tests
+        run: npm run test
+        working-directory: edumanagement
