@@ -44,12 +44,14 @@ export default function AdminStudents() {
     setLoadingStudents(true)
     try {
       const data = await getUsers({ role: 'student', active: true })
-      setStudents(data)
-      if (data.length > 0 && !selectedStudent) {
-        setSelectedStudent(data[0])
+      const sanitized = Array.isArray(data) ? data : []
+      setStudents(sanitized)
+      if (sanitized.length > 0 && !selectedStudent) {
+        setSelectedStudent(sanitized[0])
       }
     } catch (err) {
       console.error('Error al cargar estudiantes', err)
+      setStudents([])
     } finally {
       setLoadingStudents(false)
     }
@@ -62,11 +64,14 @@ export default function AdminStudents() {
       const grps = await listGroups()
       const tchs = await getUsers({ role: 'teacher', active: true })
       
-      setAllSubjects(subs)
-      setAllGroups(grps)
-      setAllTeachers(tchs)
+      setAllSubjects(Array.isArray(subs) ? subs : [])
+      setAllGroups(Array.isArray(grps) ? grps : [])
+      setAllTeachers(Array.isArray(tchs) ? tchs : [])
     } catch (err) {
       console.error('Error al cargar catálogos académicos', err)
+      setAllSubjects([])
+      setAllGroups([])
+      setAllTeachers([])
     }
   }, [])
 
@@ -77,14 +82,17 @@ export default function AdminStudents() {
     try {
       // 1. Cargar materias asignadas
       const subList = await getStudentSubjects(student.id, '2026')
-      setSubjects(subList)
+      setSubjects(Array.isArray(subList) ? subList : [])
 
       // 2. Buscar encargado
       const allParents = await getUsers({ role: 'parent' })
-      const parentList = allParents.filter(p => p.id_number === student.parent_cedula)
+      const sanitizedParents = Array.isArray(allParents) ? allParents : []
+      const parentList = sanitizedParents.filter(p => p.id_number === student.parent_cedula)
       setParents(parentList)
     } catch (err) {
       console.error('Error al cargar detalles de estudiante', err)
+      setSubjects([])
+      setParents([])
     } finally {
       setLoadingDetails(false)
     }

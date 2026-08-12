@@ -14,12 +14,17 @@ export default function ParentChildren() {
     setLoading(true)
     try {
       const list = await getMyChildren()
-      setChildren(list)
-      if (list.length > 0) {
-        setSelectedChild(list[0])
+      const sanitized = Array.isArray(list) ? list : []
+      setChildren(sanitized)
+      if (sanitized.length > 0) {
+        setSelectedChild(sanitized[0])
+      } else {
+        setSelectedChild(null)
       }
     } catch (err) {
       console.error('Error al obtener hijos del encargado', err)
+      setChildren([])
+      setSelectedChild(null)
     } finally {
       setLoading(false)
     }
@@ -30,10 +35,11 @@ export default function ParentChildren() {
     if (!child) return
     setLoadingSubjects(true)
     try {
-      const data = await getStudentSubjects(child.id, '2026')
-      setSubjects(data)
+      const data = await getStudentSubjects(child.id, String(new Date().getFullYear()))
+      setSubjects(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Error al cargar materias del hijo', err)
+      setSubjects([])
     } finally {
       setLoadingSubjects(false)
     }

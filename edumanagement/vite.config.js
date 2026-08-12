@@ -8,7 +8,7 @@ export default defineConfig({
       '/api': {
         target: 'https://two026-edu-management-api.onrender.com',
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },
