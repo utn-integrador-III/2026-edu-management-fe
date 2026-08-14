@@ -400,3 +400,45 @@ export async function deleteEvent(eventId) {
   }
   return res.json()
 }
+
+// ─────────────────────────────────────────────────────────────
+//  6. MÓDULO DE NOTIFICACIONES (US-R3-FE-29)
+// ─────────────────────────────────────────────────────────────
+// NOTA: Endpoints propuestos siguiendo la convención del resto del módulo.
+// Depende de backend US-R3-BE-025 (GET/PUT /api/v1/notifications), aún no
+// implementado. Se construye apuntando a estos endpoints para que, una vez
+// el backend esté listo, solo sea necesario ajustar la ruta/payload aquí.
+
+// Listar recordatorios/notificaciones del usuario autenticado
+export async function getNotifications(filters = {}) {
+  const query = new URLSearchParams()
+  if (filters.unread !== undefined) query.append('unread', filters.unread)
+
+  const res = await fetch(`/api/v1/notifications?${query.toString()}`, {
+    method: 'GET',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    const err = new Error(d.detail || 'Error al consultar las notificaciones')
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
+// Marcar una notificación como leída
+export async function markNotificationRead(id) {
+  const res = await fetch(`/api/v1/notifications/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ is_read: true })
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    const err = new Error(d.detail || 'Error al marcar la notificación como leída')
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}

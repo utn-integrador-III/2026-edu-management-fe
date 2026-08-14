@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen,
@@ -5,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { logoutUser } from '../api/auth'
+import { getNotifications } from '../api/edu'
 
 const NAV_BY_ROLE = {
   admin: [
@@ -66,6 +68,24 @@ export default function AppShell() {
   const topbarTitle  = navItems.find(item => item.to === currentPath)?.label
     ?? ROLE_SIDEBAR_SUB[role]
 
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const data = await getNotifications({ unread: true })
+      const list = Array.isArray(data) ? data : []
+      setUnreadCount(list.filter(n => !n.is_read).length || list.length)
+    } catch {
+      // el contador de notificaciones no debe romper el resto del menú
+    }
+  }, [])
+
+  useEffect(() => {
+    if (role === 'parent') {
+      loadUnreadCount()
+    }
+  }, [role, loadUnreadCount, currentPath])
+
   async function handleLogout() {
     const loginRoute = ROLE_LOGIN_ROUTE[session?.role] ?? '/login'
 
@@ -96,9 +116,26 @@ export default function AppShell() {
               className={({ isActive }) =>
                 `sidebar-item${isActive ? ' active' : ''}`
               }
+              style={{ position: 'relative' }}
             >
               <Icon size={20} strokeWidth={1.5} color="currentColor" />
               {label}
+              {to === '/parent/notifications' && unreadCount > 0 && (
+                <span
+                  className="badge badge-red"
+                  style={{
+                    marginLeft: 'auto',
+                    borderRadius: 'var(--radius-full)',
+                    minWidth: '20px',
+                    height: '20px',
+                    padding: '0 6px',
+                    justifyContent: 'center',
+                    fontWeight: 700
+                  }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
