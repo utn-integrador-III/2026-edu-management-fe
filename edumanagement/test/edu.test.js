@@ -28,7 +28,9 @@ import {
   getGroupEvents,
   createEvent,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  getNotifications,
+  markNotificationRead
 } from '../src/api/edu'
 
 describe('Edu API Functions', () => {
@@ -377,6 +379,57 @@ describe('Edu API Functions', () => {
         headers: standardHeaders
       })
       expect(result).toEqual({})
+    })
+  })
+
+  describe('6. Notifications', () => {
+    it('getNotifications lists reminders without filters', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] })
+      const result = await getNotifications()
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications?', {
+        method: 'GET',
+        headers: standardHeaders
+      })
+      expect(result).toEqual([])
+    })
+
+    it('getNotifications applies the unread filter', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] })
+      const result = await getNotifications({ unread: true })
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications?unread=true', {
+        method: 'GET',
+        headers: standardHeaders
+      })
+      expect(result).toEqual([])
+    })
+
+    it('getNotifications throws with backend detail message on failure', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => ({ detail: 'Servicio no disponible' })
+      })
+      await expect(getNotifications()).rejects.toThrow('Servicio no disponible')
+    })
+
+    it('markNotificationRead sends PUT request to mark reminder as read', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'notif-1', is_read: true }) })
+      const result = await markNotificationRead('notif-1')
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications/notif-1', {
+        method: 'PUT',
+        headers: standardHeaders,
+        body: JSON.stringify({ is_read: true })
+      })
+      expect(result).toEqual({ id: 'notif-1', is_read: true })
+    })
+
+    it('markNotificationRead throws with backend detail message on failure', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ detail: 'Notificación no encontrada' })
+      })
+      await expect(markNotificationRead('bad-id')).rejects.toThrow('Notificación no encontrada')
     })
   })
 })
