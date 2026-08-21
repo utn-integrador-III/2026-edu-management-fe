@@ -308,7 +308,7 @@ describe('Edu API Functions', () => {
       const mockBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' })
       mockFetch.mockResolvedValueOnce({ ok: true, blob: async () => mockBlob })
       const result = await downloadAttendanceReportPdf({ date: '2026-08-12', group_id: 'g1', subject_id: 'sub-1' })
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/attendance/report/pdf?date=2026-08-12&group_id=g1&subject_id=sub-1', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/reports/groups/g1/attendance/pdf?year=2026&month=8', {
         method: 'GET',
         headers: standardHeaders
       })
@@ -321,7 +321,7 @@ describe('Edu API Functions', () => {
         status: 404,
         json: async () => ({ detail: 'Reporte no disponible' })
       })
-      await expect(downloadAttendanceReportPdf({ date: '2026-08-12' }))
+      await expect(downloadAttendanceReportPdf({ date: '2026-08-12', group_id: 'g1' }))
         .rejects.toThrow('Reporte no disponible')
     })
   })
@@ -383,24 +383,23 @@ describe('Edu API Functions', () => {
   })
 
   describe('6. Notifications', () => {
-    it('getNotifications lists reminders without filters', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] })
+    it('getNotifications lists reminders and maps read to is_read', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { id: 'n1', title: 'Evt 1', read: true },
+          { id: 'n2', title: 'Evt 2', read: false }
+        ]
+      })
       const result = await getNotifications()
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications?', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications/', {
         method: 'GET',
         headers: standardHeaders
       })
-      expect(result).toEqual([])
-    })
-
-    it('getNotifications applies the unread filter', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] })
-      const result = await getNotifications({ unread: true })
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications?unread=true', {
-        method: 'GET',
-        headers: standardHeaders
-      })
-      expect(result).toEqual([])
+      expect(result).toEqual([
+        { id: 'n1', title: 'Evt 1', read: true, is_read: true },
+        { id: 'n2', title: 'Evt 2', read: false, is_read: false }
+      ])
     })
 
     it('getNotifications throws with backend detail message on failure', async () => {
@@ -413,14 +412,13 @@ describe('Edu API Functions', () => {
     })
 
     it('markNotificationRead sends PUT request to mark reminder as read', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'notif-1', is_read: true }) })
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'notif-1', read: true }) })
       const result = await markNotificationRead('notif-1')
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications/notif-1', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications/notif-1/read', {
         method: 'PUT',
-        headers: standardHeaders,
-        body: JSON.stringify({ is_read: true })
+        headers: standardHeaders
       })
-      expect(result).toEqual({ id: 'notif-1', is_read: true })
+      expect(result).toEqual({ id: 'notif-1', read: true })
     })
 
     it('markNotificationRead throws with backend detail message on failure', async () => {

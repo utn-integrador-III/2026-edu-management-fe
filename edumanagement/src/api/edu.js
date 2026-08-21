@@ -310,11 +310,15 @@ export async function getStudentMonthlyAttendance(studentId, month, year = 2026)
 // Aún no está confirmado que el backend lo tenga implementado.
 export async function downloadAttendanceReportPdf(filters = {}) {
   const query = new URLSearchParams()
-  if (filters.date) query.append('date', filters.date)
-  if (filters.group_id) query.append('group_id', filters.group_id)
-  if (filters.subject_id) query.append('subject_id', filters.subject_id)
+  if (filters.date) {
+    const parts = filters.date.split('-')
+    if (parts.length >= 2) {
+      query.append('year', parts[0])
+      query.append('month', String(parseInt(parts[1], 10)))
+    }
+  }
 
-  const res = await fetch(`/api/v1/attendance/report/pdf?${query.toString()}`, {
+  const res = await fetch(`/api/v1/reports/groups/${filters.group_id}/attendance/pdf?${query.toString()}`, {
     method: 'GET',
     headers: getHeaders()
   })
@@ -411,10 +415,7 @@ export async function deleteEvent(eventId) {
 
 // Listar recordatorios/notificaciones del usuario autenticado
 export async function getNotifications(filters = {}) {
-  const query = new URLSearchParams()
-  if (filters.unread !== undefined) query.append('unread', filters.unread)
-
-  const res = await fetch(`/api/v1/notifications?${query.toString()}`, {
+  const res = await fetch('/api/v1/notifications/', {
     method: 'GET',
     headers: getHeaders()
   })
@@ -424,15 +425,19 @@ export async function getNotifications(filters = {}) {
     err.status = res.status
     throw err
   }
-  return res.json()
+  const data = await res.json()
+  // Mapeamos el campo 'read' del backend a 'is_read' del frontend
+  return (Array.isArray(data) ? data : []).map(n => ({
+    ...n,
+    is_read: n.read === true
+  }))
 }
 
 // Marcar una notificación como leída
 export async function markNotificationRead(id) {
-  const res = await fetch(`/api/v1/notifications/${id}`, {
+  const res = await fetch(`/api/v1/notifications/${id}/read`, {
     method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify({ is_read: true })
+    headers: getHeaders()
   })
   if (!res.ok) {
     const d = await res.json().catch(() => ({}))
