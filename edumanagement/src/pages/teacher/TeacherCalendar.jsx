@@ -14,10 +14,11 @@ import {
   AlertCircle,
   CheckCircle2,
   Edit,
-  Trash2
+  Trash2,
+  Bell
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { listGroups, getGroupDetails, listSubjects, getGroupEvents, createEvent, updateEvent, deleteEvent } from '../../api/edu'
+import { listGroups, getGroupDetails, listSubjects, getGroupEvents, createEvent, updateEvent, deleteEvent, sendEventReminder } from '../../api/edu'
 
 const MONTHS = [
   { value: 1, label: 'Enero' },
@@ -100,6 +101,11 @@ export default function TeacherCalendar() {
   const [editForm, setEditForm] = useState(EMPTY_FORM)
   const [editFormErr, setEditFormErr] = useState({})
   const [editAlert, setEditAlert] = useState(null)
+  const [editSubmitting, setEditSubmitting] = useState(false)
+
+  // Estado para envío manual de recordatorio de un evento puntual
+  const [reminderSending, setReminderSending] = useState(false)
+  const [reminderAlert, setReminderAlert] = useState(null)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -254,23 +260,6 @@ export default function TeacherCalendar() {
     setEditFormErr(prev => ({ ...prev, [name]: '' }))
   }
 
-  async function handleConfirmDelete() {
-    if (!editForm.id) return
-    setDeleting(true)
-    setDeleteAlert(null)
-    try {
-      await deleteEvent(editForm.id)
-      setShowDeleteConfirm(false)
-      if (selectedGroup) {
-        await loadEvents(selectedGroup.id, month, year)
-      }
-    } catch (err) {
-      setDeleteAlert({ type: 'error', message: err.message || 'No se pudo eliminar el evento.' })
-    } finally {
-      setDeleting(false)
-    }
-  }
-
   function openDeleteConfirm(event) {
     if (!event) return
     setEditForm({
@@ -301,6 +290,88 @@ export default function TeacherCalendar() {
       errs.end_time = 'La hora de fin no puede ser anterior a la de inicio'
     }
     return errs
+  }
+
+  function validateEditForm() {
+    const errs = {}
+    if (!editForm.title.trim()) errs.title = 'Ingrese un título para el evento'
+    if (!editForm.start_date) errs.start_date = 'Seleccione la fecha de inicio'
+    if (editForm.end_date && editForm.start_date && editForm.end_date < editForm.start_date) {
+      errs.end_date = 'La fecha de fin no puede ser anterior a la de inicio'
+    }
+    if (editForm.start_time && editForm.end_time && editForm.end_time < editForm.start_time) {
+      errs.end_time = 'La hora de fin no puede ser anterior a la de inicio'
+    }
+    return errs
+  }
+
+  async function handleEditSubmit() {
+    const errs = validateEditForm()
+    if (Object.keys(errs).length) {
+      setEditFormErr(errs)
+      return
+    }
+    if (!selectedGroup || !editForm.id) return
+
+    setEditSubmitting(true)
+    setEditAlert(null)
+    try {
+      await updateEvent(editForm.id, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        event_type: editForm.event_type,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date || editForm.start_date,
+        start_time: editForm.start_time || null,
+        end_time: editForm.end_time || null,
+        location: editForm.location.trim() || null,
+        subject_id: editForm.subject_id || null
+      })
+      setEditAlert({ type: 'success', message: 'Evento actualizado con éxito.' })
+      await loadEvents(selectedGroup.id, month, year)
+      setTimeout(() => setShowEditModal(false), 900)
+    } catch (err) {
+      setEditAlert({ type: 'error', message: err.message || 'No se pudo actualizar el evento.' })
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  async function handleDeleteSubmit() {
+    if (!selectedGroup || !editForm.id) return
+
+    setDeleting(true)
+    setDeleteAlert(null)
+    try {
+      await deleteEvent(editForm.id)
+      setDeleteAlert({ type: 'success', message: 'Evento eliminado con éxito.' })
+      await loadEvents(selectedGroup.id, month, year)
+      setTimeout(() => setShowDeleteConfirm(false), 900)
+    } catch (err) {
+      setDeleteAlert({ type: 'error', message: err.message || 'No se pudo eliminar el evento.' })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  async function handleSendReminder(event) {
+    if (!event?.id) return
+
+    setReminderSending(true)
+    setReminderAlert(null)
+    try {
+      const res = await sendEventReminder(event.id)
+      const { sent = 0, duplicated = 0, skipped = 0, failed = 0 } = res.summary || {}
+      let message = `Recordatorio enviado a ${sent} encargado(s).`
+      if (duplicated > 0) message += ` ${duplicated} ya lo habían recibido antes.`
+      if (skipped > 0) message += ` ${skipped} sin correo registrado.`
+      if (failed > 0) message += ` ${failed} fallaron al enviar.`
+      setReminderAlert({ type: 'success', message })
+    } catch (err) {
+      setReminderAlert({ type: 'error', message: err.message || 'No se pudo enviar el recordatorio.' })
+    } finally {
+      setReminderSending(false)
+    }
   }
 
   async function handleCreateSubmit() {
@@ -461,7 +532,7 @@ export default function TeacherCalendar() {
                             return (
                               <button
                                 key={evt.id}
-                                onClick={() => setSelectedEvent(evt)}
+                                onClick={() => { setReminderAlert(null); setSelectedEvent(evt) }}
                                 title={evt.title}
                                 style={{
                                   fontSize: '10px',
@@ -512,7 +583,7 @@ export default function TeacherCalendar() {
                       return (
                         <button
                           key={evt.id}
-                          onClick={() => setSelectedEvent(evt)}
+                          onClick={() => { setReminderAlert(null); setSelectedEvent(evt) }}
                           style={{
                             padding: '10px 12px',
                             borderRadius: 'var(--radius-md)',
@@ -609,8 +680,17 @@ export default function TeacherCalendar() {
               </div>
             </div>
 
-            <div style={{ marginTop: '28px', borderTop: '1px solid var(--neutral-100)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
+            {reminderAlert && (
+              <div
+                className={`alert alert-${reminderAlert.type === 'success' ? 'success' : 'error'}`}
+                style={{ marginTop: '16px', fontSize: '13px' }}
+              >
+                {reminderAlert.message}
+              </div>
+            )}
+
+            <div style={{ marginTop: '20px', borderTop: '1px solid var(--neutral-100)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   className="btn btn-secondary"
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--blue-600)', border: '1px solid var(--blue-200)', background: 'var(--blue-50)', padding: '6px 12px', fontSize: '13px' }}
@@ -626,6 +706,15 @@ export default function TeacherCalendar() {
                 >
                   <Trash2 size={14} strokeWidth={1.5} />
                   Eliminar
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  disabled={reminderSending}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green-600, #16a34a)', border: '1px solid #bbf7d0', background: '#f0fdf4', padding: '6px 12px', fontSize: '13px', opacity: reminderSending ? 0.7 : 1 }}
+                  onClick={() => handleSendReminder(selectedEvent)}
+                >
+                  <Bell size={14} strokeWidth={1.5} />
+                  {reminderSending ? 'Enviando...' : 'Enviar recordatorio ahora'}
                 </button>
               </div>
               <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={() => setSelectedEvent(null)}>
@@ -825,10 +914,12 @@ export default function TeacherCalendar() {
               </button>
             </div>
 
-            <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
-              <AlertCircle size={16} strokeWidth={1.5} />
-              <span>Funcionalidad de guardado deshabilitada temporalmente en el backend.</span>
-            </div>
+            {editAlert && (
+              <div className={`alert alert-${editAlert.type === 'success' ? 'success' : 'error'}`} style={{ marginBottom: '16px' }}>
+                {editAlert.type === 'success' ? <CheckCircle2 size={16} strokeWidth={1.5} /> : <AlertCircle size={16} strokeWidth={1.5} />}
+                <span>{editAlert.message}</span>
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="field-group">
@@ -841,6 +932,7 @@ export default function TeacherCalendar() {
                   placeholder="Ej: Examen parcial de Matemáticas"
                   value={editForm.title}
                   onChange={handleEditFormChange}
+                  disabled={editSubmitting}
                 />
                 {editFormErr.title && <span className="field-error">{editFormErr.title}</span>}
               </div>
@@ -855,6 +947,7 @@ export default function TeacherCalendar() {
                   placeholder="Detalles adicionales para los padres y estudiantes..."
                   value={editForm.description}
                   onChange={handleEditFormChange}
+                  disabled={editSubmitting}
                   style={{ resize: 'vertical', fontFamily: 'inherit' }}
                 />
               </div>
@@ -868,6 +961,7 @@ export default function TeacherCalendar() {
                     className="field-input"
                     value={editForm.event_type}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   >
                     {Object.entries(EVENT_TYPE_META).map(([key, meta]) => (
                       <option key={key} value={key}>{meta.label}</option>
@@ -883,6 +977,7 @@ export default function TeacherCalendar() {
                     className="field-input"
                     value={editForm.subject_id}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   >
                     <option value="">General de la sección</option>
                     {teacherSubjects.map(s => (
@@ -902,6 +997,7 @@ export default function TeacherCalendar() {
                     className={`field-input${editFormErr.start_date ? ' error' : ''}`}
                     value={editForm.start_date}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                   {editFormErr.start_date && <span className="field-error">{editFormErr.start_date}</span>}
                 </div>
@@ -914,6 +1010,7 @@ export default function TeacherCalendar() {
                     className={`field-input${editFormErr.end_date ? ' error' : ''}`}
                     value={editForm.end_date}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                   {editFormErr.end_date && <span className="field-error">{editFormErr.end_date}</span>}
                 </div>
@@ -929,6 +1026,7 @@ export default function TeacherCalendar() {
                     className="field-input"
                     value={editForm.start_time}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                 </div>
                 <div className="field-group">
@@ -940,6 +1038,7 @@ export default function TeacherCalendar() {
                     className={`field-input${editFormErr.end_time ? ' error' : ''}`}
                     value={editForm.end_time}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                   {editFormErr.end_time && <span className="field-error">{editFormErr.end_time}</span>}
                 </div>
@@ -955,6 +1054,7 @@ export default function TeacherCalendar() {
                   placeholder="Ej: Aula 7-A, Gimnasio, Laboratorio..."
                   value={editForm.location}
                   onChange={handleEditFormChange}
+                  disabled={editSubmitting}
                 />
               </div>
             </div>
@@ -964,15 +1064,17 @@ export default function TeacherCalendar() {
                 className="btn btn-secondary btn-md"
                 style={{ flex: 1 }}
                 onClick={() => setShowEditModal(false)}
+                disabled={editSubmitting}
               >
                 Cancelar
               </button>
               <button
-                className="btn btn-primary btn-md"
-                style={{ flex: 1, opacity: 0.5, cursor: 'not-allowed' }}
-                disabled={true}
+                className={`btn btn-primary btn-md${editSubmitting ? ' btn-loading' : ''}`}
+                style={{ flex: 1 }}
+                onClick={handleEditSubmit}
+                disabled={editSubmitting}
               >
-                Guardar Cambios
+                {editSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>
             </div>
           </div>
@@ -991,8 +1093,8 @@ export default function TeacherCalendar() {
             </div>
 
             {deleteAlert && (
-              <div className={`alert alert-${deleteAlert.type === 'error' ? 'danger' : 'success'}`} style={{ marginBottom: '16px' }}>
-                <AlertCircle size={16} strokeWidth={1.5} />
+              <div className={`alert alert-${deleteAlert.type === 'success' ? 'success' : 'error'}`} style={{ marginBottom: '16px' }}>
+                {deleteAlert.type === 'success' ? <CheckCircle2 size={16} strokeWidth={1.5} /> : <AlertCircle size={16} strokeWidth={1.5} />}
                 <span>{deleteAlert.message}</span>
               </div>
             )}
@@ -1013,9 +1115,9 @@ export default function TeacherCalendar() {
                 Cancelar
               </button>
               <button
-                className="btn btn-primary btn-md"
+                className={`btn btn-primary btn-md${deleting ? ' btn-loading' : ''}`}
                 style={{ flex: 1, background: 'var(--color-danger)', border: '1px solid #fecaca' }}
-                onClick={handleConfirmDelete}
+                onClick={handleDeleteSubmit}
                 disabled={deleting}
               >
                 {deleting ? 'Eliminando...' : 'Confirmar Eliminación'}
