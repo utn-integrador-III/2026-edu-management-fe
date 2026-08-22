@@ -65,13 +65,14 @@ export default function ParentAttendance() {
   const [loadingChildren, setLoadingChildren] = useState(false)
 
   const [subjects, setSubjects] = useState([])
+  const [loadingSubjects, setLoadingSubjects] = useState(false)
 
   const [attendance, setAttendance] = useState([])
   const [loadingAttendance, setLoadingAttendance] = useState(false)
 
   // Filtros
-  const [year, setYear] = useState(2026) // Año académico activo
-  const [month, setMonth] = useState(7) // Default Julio por año 2026
+  const [year, setYear] = useState(() => new Date().getFullYear()) // Año académico activo
+  const [month, setMonth] = useState(() => new Date().getMonth() + 1) // Mes actual por defecto
   const [subjectId, setSubjectId] = useState('')
   const [viewMode, setViewMode] = useState('calendar') // 'calendar' | 'list'
   const [activeDay, setActiveDay] = useState('') // Fecha seleccionada para el detalle
