@@ -14,10 +14,11 @@ import {
   AlertCircle,
   CheckCircle2,
   Edit,
-  Trash2
+  Trash2,
+  Bell
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { listGroups, getGroupDetails, listSubjects, getGroupEvents, createEvent, updateEvent, deleteEvent } from '../../api/edu'
+import { listGroups, getGroupDetails, listSubjects, getGroupEvents, createEvent, updateEvent, deleteEvent, sendEventReminder } from '../../api/edu'
 
 const MONTHS = [
   { value: 1, label: 'Enero' },
@@ -101,6 +102,10 @@ export default function TeacherCalendar() {
   const [editFormErr, setEditFormErr] = useState({})
   const [editAlert, setEditAlert] = useState(null)
   const [editSubmitting, setEditSubmitting] = useState(false)
+
+  // Estado para envío manual de recordatorio de un evento puntual
+  const [reminderSending, setReminderSending] = useState(false)
+  const [reminderAlert, setReminderAlert] = useState(null)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -344,6 +349,26 @@ export default function TeacherCalendar() {
     }
   }
 
+  async function handleSendReminder(event) {
+    if (!event?.id) return
+
+    setReminderSending(true)
+    setReminderAlert(null)
+    try {
+      const res = await sendEventReminder(event.id)
+      const { sent = 0, duplicated = 0, skipped = 0, failed = 0 } = res.summary || {}
+      let message = `Recordatorio enviado a ${sent} encargado(s).`
+      if (duplicated > 0) message += ` ${duplicated} ya lo habían recibido antes.`
+      if (skipped > 0) message += ` ${skipped} sin correo registrado.`
+      if (failed > 0) message += ` ${failed} fallaron al enviar.`
+      setReminderAlert({ type: 'success', message })
+    } catch (err) {
+      setReminderAlert({ type: 'error', message: err.message || 'No se pudo enviar el recordatorio.' })
+    } finally {
+      setReminderSending(false)
+    }
+  }
+
   async function handleCreateSubmit() {
     const errs = validateForm()
     if (Object.keys(errs).length) {
@@ -502,7 +527,7 @@ export default function TeacherCalendar() {
                             return (
                               <button
                                 key={evt.id}
-                                onClick={() => setSelectedEvent(evt)}
+                                onClick={() => { setReminderAlert(null); setSelectedEvent(evt) }}
                                 title={evt.title}
                                 style={{
                                   fontSize: '10px',
@@ -553,7 +578,7 @@ export default function TeacherCalendar() {
                       return (
                         <button
                           key={evt.id}
-                          onClick={() => setSelectedEvent(evt)}
+                          onClick={() => { setReminderAlert(null); setSelectedEvent(evt) }}
                           style={{
                             padding: '10px 12px',
                             borderRadius: 'var(--radius-md)',
@@ -650,8 +675,17 @@ export default function TeacherCalendar() {
               </div>
             </div>
 
-            <div style={{ marginTop: '28px', borderTop: '1px solid var(--neutral-100)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
+            {reminderAlert && (
+              <div
+                className={`alert alert-${reminderAlert.type === 'success' ? 'success' : 'error'}`}
+                style={{ marginTop: '16px', fontSize: '13px' }}
+              >
+                {reminderAlert.message}
+              </div>
+            )}
+
+            <div style={{ marginTop: '20px', borderTop: '1px solid var(--neutral-100)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   className="btn btn-secondary"
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--blue-600)', border: '1px solid var(--blue-200)', background: 'var(--blue-50)', padding: '6px 12px', fontSize: '13px' }}
@@ -667,6 +701,15 @@ export default function TeacherCalendar() {
                 >
                   <Trash2 size={14} strokeWidth={1.5} />
                   Eliminar
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  disabled={reminderSending}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green-600, #16a34a)', border: '1px solid #bbf7d0', background: '#f0fdf4', padding: '6px 12px', fontSize: '13px', opacity: reminderSending ? 0.7 : 1 }}
+                  onClick={() => handleSendReminder(selectedEvent)}
+                >
+                  <Bell size={14} strokeWidth={1.5} />
+                  {reminderSending ? 'Enviando...' : 'Enviar recordatorio ahora'}
                 </button>
               </div>
               <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={() => setSelectedEvent(null)}>

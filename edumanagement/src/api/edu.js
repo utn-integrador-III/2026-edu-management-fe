@@ -405,6 +405,20 @@ export async function deleteEvent(eventId) {
   return res.json()
 }
 
+// Disparar manualmente el recordatorio de un evento puntual, sin esperar
+// el ciclo del scheduler (solo el creador del evento o un admin puede)
+export async function sendEventReminder(eventId) {
+  const res = await fetch(`/api/v1/calendar/events/${eventId}/send-reminder`, {
+    method: 'POST',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    throw new Error(d.detail || 'Error al enviar el recordatorio')
+  }
+  return res.json()
+}
+
 // ─────────────────────────────────────────────────────────────
 //  6. MÓDULO DE NOTIFICACIONES (US-R3-FE-29)
 // ─────────────────────────────────────────────────────────────
