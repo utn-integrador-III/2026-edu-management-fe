@@ -383,7 +383,7 @@ describe('Edu API Functions', () => {
   })
 
   describe('6. Notifications', () => {
-    it('getNotifications lists reminders and maps read to is_read', async () => {
+    it('getNotifications lists reminders and maps read to is_read (sin hijos, sin enriquecimiento)', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => [
@@ -391,14 +391,49 @@ describe('Edu API Functions', () => {
           { id: 'n2', title: 'Evt 2', read: false }
         ]
       })
+      // getMyChildren() se llama internamente para cruzar eventos; sin hijos no hay nada que enriquecer
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] })
+
       const result = await getNotifications()
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/notifications/', {
+      expect(mockFetch).toHaveBeenNthCalledWith(1, '/api/v1/notifications/', {
         method: 'GET',
         headers: standardHeaders
       })
       expect(result).toEqual([
-        { id: 'n1', title: 'Evt 1', read: true, is_read: true },
-        { id: 'n2', title: 'Evt 2', read: false, is_read: false }
+        { id: 'n1', title: 'Evt 1', read: true, is_read: true, message: '', event_date: null, student_name: null },
+        { id: 'n2', title: 'Evt 2', read: false, is_read: false, message: '', event_date: null, student_name: null }
+      ])
+    })
+
+    it('getNotifications enriches reminders with event_date and student_name cruzando eventos de los hijos', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { id: 'n1', title: 'Recordatorio', body: 'Mañana hay examen', event_id: 'evt-1', read: false }
+        ]
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'child-1', first_name: 'Sofía', last_name: 'Jiménez' }]
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'evt-1', start_date: '2026-08-25' }]
+      })
+
+      const result = await getNotifications()
+      expect(result).toEqual([
+        {
+          id: 'n1',
+          title: 'Recordatorio',
+          body: 'Mañana hay examen',
+          event_id: 'evt-1',
+          read: false,
+          is_read: false,
+          message: 'Mañana hay examen',
+          event_date: '2026-08-25',
+          student_name: 'Sofía Jiménez'
+        }
       ])
     })
 

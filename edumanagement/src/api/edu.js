@@ -426,11 +426,64 @@ export async function getNotifications(filters = {}) {
     throw err
   }
   const data = await res.json()
-  // Mapeamos el campo 'read' del backend a 'is_read' del frontend
-  return (Array.isArray(data) ? data : []).map(n => ({
-    ...n,
-    is_read: n.read === true
+  const notifications = Array.isArray(data) ? data : []
+
+  // El backend (US-R3-BE-025) todavía solo envía 'body', 'event_id' y 'read'
+  // por notificación; no incluye 'message', 'event_date' ni 'student_name'.
+  // Los reconstruimos aquí cruzando los eventos de calendario de los hijos
+  // del encargado autenticado, sin necesidad de modificar el backend.
+  const eventInfoById = await buildEventInfoMap()
+
+  return notifications.map(n => {
+    const info = n.event_id ? eventInfoById.get(n.event_id) : null
+    return {
+      ...n,
+      is_read: n.read === true,
+      message: n.body || n.message || '',
+      event_date: info?.event_date ?? n.event_date ?? null,
+      student_name: info?.student_names ?? n.student_name ?? null
+    }
+  })
+}
+
+// Cruza los hijos del encargado con sus eventos de calendario vigentes para
+// armar un mapa event_id -> { event_date, student_names }.
+// Nota: getStudentEvents solo devuelve eventos activos con end_date >= hoy,
+// así que recordatorios de eventos ya finalizados quedarán sin event_date/
+// student_name (limitación esperada al resolver esto solo desde el cliente).
+async function buildEventInfoMap() {
+  const map = new Map()
+  let children = []
+  try {
+    children = await getMyChildren()
+  } catch (err) {
+    console.error('No se pudo obtener la lista de hijos para enriquecer notificaciones', err)
+    return map
+  }
+
+  await Promise.all((Array.isArray(children) ? children : []).map(async (child) => {
+    try {
+      const events = await getStudentEvents(child.id)
+      const studentLabel = `${child.first_name || ''} ${child.last_name || ''}`.trim()
+      for (const evt of (Array.isArray(events) ? events : [])) {
+        const existing = map.get(evt.id)
+        if (existing) {
+          if (studentLabel && !existing.student_names?.includes(studentLabel)) {
+            existing.student_names = existing.student_names ? `${existing.student_names}, ${studentLabel}` : studentLabel
+          }
+        } else {
+          map.set(evt.id, {
+            event_date: evt.start_date || null,
+            student_names: studentLabel || null
+          })
+        }
+      }
+    } catch (err) {
+      console.error(`No se pudieron obtener eventos del estudiante ${child.id}`, err)
+    }
   }))
+
+  return map
 }
 
 // Marcar una notificación como leída
