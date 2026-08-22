@@ -165,11 +165,16 @@ export default function TeacherCalendar() {
     setLoadingEvents(true)
     try {
       const data = await getGroupEvents(groupId, { month: m, year: y })
-      const sanitized = (Array.isArray(data) ? data : []).map(evt => ({
-        ...evt,
-        start_date: evt.start_date ? evt.start_date.split('T')[0] : '',
-        end_date: evt.end_date ? evt.end_date.split('T')[0] : ''
-      }))
+      const sanitized = (Array.isArray(data) ? data : [])
+        // El backend hace soft-delete (active: false) pero /calendar/events?group_id=
+        // no filtra por "active" salvo que se envíe explícitamente, así que lo
+        // filtramos aquí para que los eventos eliminados dejen de mostrarse.
+        .filter(evt => evt.active !== false)
+        .map(evt => ({
+          ...evt,
+          start_date: evt.start_date ? evt.start_date.split('T')[0] : '',
+          end_date: evt.end_date ? evt.end_date.split('T')[0] : ''
+        }))
       setEvents(sanitized)
     } catch (err) {
       console.error('Error al cargar eventos de la sección', err)
