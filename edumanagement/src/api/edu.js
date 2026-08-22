@@ -305,6 +305,32 @@ export async function getStudentMonthlyAttendance(studentId, month, year = 2026)
   return res.json()
 }
 
+// Descargar reporte de asistencia en formato PDF (Blob)
+// NOTA: Endpoint propuesto siguiendo la convención de /api/v1/attendance del backend.
+// Aún no está confirmado que el backend lo tenga implementado.
+export async function downloadAttendanceReportPdf(filters = {}) {
+  const query = new URLSearchParams()
+  if (filters.date) {
+    const parts = filters.date.split('-')
+    if (parts.length >= 2) {
+      query.append('year', parts[0])
+      query.append('month', String(parseInt(parts[1], 10)))
+    }
+  }
+
+  const res = await fetch(`/api/v1/reports/groups/${filters.group_id}/attendance/pdf?${query.toString()}`, {
+    method: 'GET',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    const err = new Error(d.detail || 'Error al descargar el reporte PDF')
+    err.status = res.status
+    throw err
+  }
+  return res.blob()
+}
+
 // ─────────────────────────────────────────────────────────────
 //  5. MÓDULO DE CALENDARIO
 // ─────────────────────────────────────────────────────────────
@@ -348,6 +374,143 @@ export async function createEvent(data) {
   if (!res.ok) {
     const d = await res.json().catch(() => ({}))
     throw new Error(d.detail || 'Error al crear el evento')
+  }
+  return res.json()
+}
+
+// Actualizar un evento escolar (US-R3-FE-026)
+export async function updateEvent(eventId, data) {
+  const res = await fetch(`/api/v1/calendar/events/${eventId}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    throw new Error(d.detail || 'Error al actualizar el evento')
+  }
+  return res.json()
+}
+
+// Eliminar un evento escolar (US-R3-FE-026)
+export async function deleteEvent(eventId) {
+  const res = await fetch(`/api/v1/calendar/events/${eventId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    throw new Error(d.detail || 'Error al eliminar el evento')
+  }
+  return res.json()
+}
+
+// Disparar manualmente el recordatorio de un evento puntual, sin esperar
+// el ciclo del scheduler (solo el creador del evento o un admin puede)
+export async function sendEventReminder(eventId) {
+  const res = await fetch(`/api/v1/calendar/events/${eventId}/send-reminder`, {
+    method: 'POST',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    throw new Error(d.detail || 'Error al enviar el recordatorio')
+  }
+  return res.json()
+}
+
+// ─────────────────────────────────────────────────────────────
+//  6. MÓDULO DE NOTIFICACIONES (US-R3-FE-29)
+// ─────────────────────────────────────────────────────────────
+// NOTA: Endpoints propuestos siguiendo la convención del resto del módulo.
+// Depende de backend US-R3-BE-025 (GET/PUT /api/v1/notifications), aún no
+// implementado. Se construye apuntando a estos endpoints para que, una vez
+// el backend esté listo, solo sea necesario ajustar la ruta/payload aquí.
+
+// Listar recordatorios/notificaciones del usuario autenticado
+export async function getNotifications(filters = {}) {
+  const res = await fetch('/api/v1/notifications/', {
+    method: 'GET',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    const err = new Error(d.detail || 'Error al consultar las notificaciones')
+    err.status = res.status
+    throw err
+  }
+  const data = await res.json()
+  const notifications = Array.isArray(data) ? data : []
+
+  // El backend (US-R3-BE-025) todavía solo envía 'body', 'event_id' y 'read'
+  // por notificación; no incluye 'message', 'event_date' ni 'student_name'.
+  // Los reconstruimos aquí cruzando los eventos de calendario de los hijos
+  // del encargado autenticado, sin necesidad de modificar el backend.
+  const eventInfoById = await buildEventInfoMap()
+
+  return notifications.map(n => {
+    const info = n.event_id ? eventInfoById.get(n.event_id) : null
+    return {
+      ...n,
+      is_read: n.read === true,
+      message: n.body || n.message || '',
+      event_date: info?.event_date ?? n.event_date ?? null,
+      student_name: info?.student_names ?? n.student_name ?? null
+    }
+  })
+}
+
+// Cruza los hijos del encargado con sus eventos de calendario vigentes para
+// armar un mapa event_id -> { event_date, student_names }.
+// Nota: getStudentEvents solo devuelve eventos activos con end_date >= hoy,
+// así que recordatorios de eventos ya finalizados quedarán sin event_date/
+// student_name (limitación esperada al resolver esto solo desde el cliente).
+async function buildEventInfoMap() {
+  const map = new Map()
+  let children = []
+  try {
+    children = await getMyChildren()
+  } catch (err) {
+    console.error('No se pudo obtener la lista de hijos para enriquecer notificaciones', err)
+    return map
+  }
+
+  await Promise.all((Array.isArray(children) ? children : []).map(async (child) => {
+    try {
+      const events = await getStudentEvents(child.id)
+      const studentLabel = `${child.first_name || ''} ${child.last_name || ''}`.trim()
+      for (const evt of (Array.isArray(events) ? events : [])) {
+        const existing = map.get(evt.id)
+        if (existing) {
+          if (studentLabel && !existing.student_names?.includes(studentLabel)) {
+            existing.student_names = existing.student_names ? `${existing.student_names}, ${studentLabel}` : studentLabel
+          }
+        } else {
+          map.set(evt.id, {
+            event_date: evt.start_date || null,
+            student_names: studentLabel || null
+          })
+        }
+      }
+    } catch (err) {
+      console.error(`No se pudieron obtener eventos del estudiante ${child.id}`, err)
+    }
+  }))
+
+  return map
+}
+
+// Marcar una notificación como leída
+export async function markNotificationRead(id) {
+  const res = await fetch(`/api/v1/notifications/${id}/read`, {
+    method: 'PUT',
+    headers: getHeaders()
+  })
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}))
+    const err = new Error(d.detail || 'Error al marcar la notificación como leída')
+    err.status = res.status
+    throw err
   }
   return res.json()
 }
