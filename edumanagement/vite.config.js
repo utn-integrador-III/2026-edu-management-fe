@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'https://two026-edu-management-api-wjlo.onrender.com',
+          target: env.VITE_API_URL || 'https://two026-edu-management-api.onrender.com',
           changeOrigin: true,
           secure: false,
         },
