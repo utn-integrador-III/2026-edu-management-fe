@@ -100,6 +100,7 @@ export default function TeacherCalendar() {
   const [editForm, setEditForm] = useState(EMPTY_FORM)
   const [editFormErr, setEditFormErr] = useState({})
   const [editAlert, setEditAlert] = useState(null)
+  const [editSubmitting, setEditSubmitting] = useState(false)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -279,6 +280,68 @@ export default function TeacherCalendar() {
       errs.end_time = 'La hora de fin no puede ser anterior a la de inicio'
     }
     return errs
+  }
+
+  function validateEditForm() {
+    const errs = {}
+    if (!editForm.title.trim()) errs.title = 'Ingrese un título para el evento'
+    if (!editForm.start_date) errs.start_date = 'Seleccione la fecha de inicio'
+    if (editForm.end_date && editForm.start_date && editForm.end_date < editForm.start_date) {
+      errs.end_date = 'La fecha de fin no puede ser anterior a la de inicio'
+    }
+    if (editForm.start_time && editForm.end_time && editForm.end_time < editForm.start_time) {
+      errs.end_time = 'La hora de fin no puede ser anterior a la de inicio'
+    }
+    return errs
+  }
+
+  async function handleEditSubmit() {
+    const errs = validateEditForm()
+    if (Object.keys(errs).length) {
+      setEditFormErr(errs)
+      return
+    }
+    if (!selectedGroup || !editForm.id) return
+
+    setEditSubmitting(true)
+    setEditAlert(null)
+    try {
+      await updateEvent(editForm.id, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        event_type: editForm.event_type,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date || editForm.start_date,
+        start_time: editForm.start_time || null,
+        end_time: editForm.end_time || null,
+        location: editForm.location.trim() || null,
+        subject_id: editForm.subject_id || null
+      })
+      setEditAlert({ type: 'success', message: 'Evento actualizado con éxito.' })
+      await loadEvents(selectedGroup.id, month, year)
+      setTimeout(() => setShowEditModal(false), 900)
+    } catch (err) {
+      setEditAlert({ type: 'error', message: err.message || 'No se pudo actualizar el evento.' })
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  async function handleDeleteSubmit() {
+    if (!selectedGroup || !editForm.id) return
+
+    setDeleting(true)
+    setDeleteAlert(null)
+    try {
+      await deleteEvent(editForm.id)
+      setDeleteAlert({ type: 'success', message: 'Evento eliminado con éxito.' })
+      await loadEvents(selectedGroup.id, month, year)
+      setTimeout(() => setShowDeleteConfirm(false), 900)
+    } catch (err) {
+      setDeleteAlert({ type: 'error', message: err.message || 'No se pudo eliminar el evento.' })
+    } finally {
+      setDeleting(false)
+    }
   }
 
   async function handleCreateSubmit() {
@@ -803,10 +866,12 @@ export default function TeacherCalendar() {
               </button>
             </div>
 
-            <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
-              <AlertCircle size={16} strokeWidth={1.5} />
-              <span>Funcionalidad de guardado deshabilitada temporalmente en el backend.</span>
-            </div>
+            {editAlert && (
+              <div className={`alert alert-${editAlert.type === 'success' ? 'success' : 'error'}`} style={{ marginBottom: '16px' }}>
+                {editAlert.type === 'success' ? <CheckCircle2 size={16} strokeWidth={1.5} /> : <AlertCircle size={16} strokeWidth={1.5} />}
+                <span>{editAlert.message}</span>
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="field-group">
@@ -819,6 +884,7 @@ export default function TeacherCalendar() {
                   placeholder="Ej: Examen parcial de Matemáticas"
                   value={editForm.title}
                   onChange={handleEditFormChange}
+                  disabled={editSubmitting}
                 />
                 {editFormErr.title && <span className="field-error">{editFormErr.title}</span>}
               </div>
@@ -833,6 +899,7 @@ export default function TeacherCalendar() {
                   placeholder="Detalles adicionales para los padres y estudiantes..."
                   value={editForm.description}
                   onChange={handleEditFormChange}
+                  disabled={editSubmitting}
                   style={{ resize: 'vertical', fontFamily: 'inherit' }}
                 />
               </div>
@@ -846,6 +913,7 @@ export default function TeacherCalendar() {
                     className="field-input"
                     value={editForm.event_type}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   >
                     {Object.entries(EVENT_TYPE_META).map(([key, meta]) => (
                       <option key={key} value={key}>{meta.label}</option>
@@ -861,6 +929,7 @@ export default function TeacherCalendar() {
                     className="field-input"
                     value={editForm.subject_id}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   >
                     <option value="">General de la sección</option>
                     {teacherSubjects.map(s => (
@@ -880,6 +949,7 @@ export default function TeacherCalendar() {
                     className={`field-input${editFormErr.start_date ? ' error' : ''}`}
                     value={editForm.start_date}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                   {editFormErr.start_date && <span className="field-error">{editFormErr.start_date}</span>}
                 </div>
@@ -892,6 +962,7 @@ export default function TeacherCalendar() {
                     className={`field-input${editFormErr.end_date ? ' error' : ''}`}
                     value={editForm.end_date}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                   {editFormErr.end_date && <span className="field-error">{editFormErr.end_date}</span>}
                 </div>
@@ -907,6 +978,7 @@ export default function TeacherCalendar() {
                     className="field-input"
                     value={editForm.start_time}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                 </div>
                 <div className="field-group">
@@ -918,6 +990,7 @@ export default function TeacherCalendar() {
                     className={`field-input${editFormErr.end_time ? ' error' : ''}`}
                     value={editForm.end_time}
                     onChange={handleEditFormChange}
+                    disabled={editSubmitting}
                   />
                   {editFormErr.end_time && <span className="field-error">{editFormErr.end_time}</span>}
                 </div>
@@ -933,6 +1006,7 @@ export default function TeacherCalendar() {
                   placeholder="Ej: Aula 7-A, Gimnasio, Laboratorio..."
                   value={editForm.location}
                   onChange={handleEditFormChange}
+                  disabled={editSubmitting}
                 />
               </div>
             </div>
@@ -942,15 +1016,17 @@ export default function TeacherCalendar() {
                 className="btn btn-secondary btn-md"
                 style={{ flex: 1 }}
                 onClick={() => setShowEditModal(false)}
+                disabled={editSubmitting}
               >
                 Cancelar
               </button>
               <button
-                className="btn btn-primary btn-md"
-                style={{ flex: 1, opacity: 0.5, cursor: 'not-allowed' }}
-                disabled={true}
+                className={`btn btn-primary btn-md${editSubmitting ? ' btn-loading' : ''}`}
+                style={{ flex: 1 }}
+                onClick={handleEditSubmit}
+                disabled={editSubmitting}
               >
-                Guardar Cambios
+                {editSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>
             </div>
           </div>
@@ -968,10 +1044,12 @@ export default function TeacherCalendar() {
               </button>
             </div>
 
-            <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
-              <AlertCircle size={16} strokeWidth={1.5} />
-              <span>Funcionalidad de eliminación deshabilitada temporalmente en el backend.</span>
-            </div>
+            {deleteAlert && (
+              <div className={`alert alert-${deleteAlert.type === 'success' ? 'success' : 'error'}`} style={{ marginBottom: '16px' }}>
+                {deleteAlert.type === 'success' ? <CheckCircle2 size={16} strokeWidth={1.5} /> : <AlertCircle size={16} strokeWidth={1.5} />}
+                <span>{deleteAlert.message}</span>
+              </div>
+            )}
 
             <div style={{ marginBottom: '20px' }}>
               <p className="text-body" style={{ color: 'var(--neutral-700)', lineHeight: 1.5 }}>
@@ -984,15 +1062,17 @@ export default function TeacherCalendar() {
                 className="btn btn-secondary btn-md"
                 style={{ flex: 1 }}
                 onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
               >
                 Cancelar
               </button>
               <button
-                className="btn btn-primary btn-md"
-                style={{ flex: 1, background: 'var(--color-danger)', border: '1px solid #fecaca', opacity: 0.5, cursor: 'not-allowed' }}
-                disabled={true}
+                className={`btn btn-primary btn-md${deleting ? ' btn-loading' : ''}`}
+                style={{ flex: 1, background: 'var(--color-danger)', border: '1px solid #fecaca' }}
+                onClick={handleDeleteSubmit}
+                disabled={deleting}
               >
-                Confirmar Eliminación
+                {deleting ? 'Eliminando...' : 'Confirmar Eliminación'}
               </button>
             </div>
           </div>
