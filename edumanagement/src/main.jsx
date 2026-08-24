@@ -1,3 +1,4 @@
+/* eslint-disable react/only-export-components */
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
@@ -22,6 +23,7 @@ import ParentDashboard   from './pages/parent/ParentDashboard'
 import ParentChildren   from './pages/parent/ParentChildren'
 import ParentAttendance from './pages/parent/ParentAttendance'
 import ParentCalendar   from './pages/parent/ParentCalendar'
+import ParentNotifications from './pages/parent/ParentNotifications'
 import AppShell         from './components/AppShell'
 
 const ROLE_DASHBOARD = {
@@ -121,7 +123,7 @@ function AppRoutes() {
           <Route path="/parent/attendance"    element={<ParentAttendance />} />
           <Route path="/parent/grades"        element={<PlaceholderPage title="Calificaciones" />} />
           <Route path="/parent/calendar"      element={<ParentCalendar />} />
-          <Route path="/parent/notifications" element={<PlaceholderPage title="Notificaciones" />} />
+          <Route path="/parent/notifications" element={<ParentNotifications />} />
         </Route>
       </Route>
 

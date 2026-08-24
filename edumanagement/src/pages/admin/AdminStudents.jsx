@@ -6,8 +6,7 @@ import {
 } from 'lucide-react'
 import {
   getUsers, getStudentSubjects, assignSubjects,
-  removeSubjectFromStudent, listSubjects, listGroups,
-  getParentChildren
+  removeSubjectFromStudent, listSubjects, listGroups
 } from '../../api/edu'
 
 export default function AdminStudents() {
